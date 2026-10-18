@@ -12,6 +12,7 @@ import {
   Flame,
   FileText,
 } from "lucide-react";
+import { Category } from "@/types/category";
 
 // Dữ liệu mẫu danh mục
 const CATEGORIES = [
@@ -111,6 +112,7 @@ const CONTRACT_LIST = [
 const ContractCatalog = () => {
   const [activeTab, setActiveTab] = useState("phobien");
   const [searchCategory, setSearchCategory] = useState("");
+  const [categories, setCategories] = useState<Category[]>(CATEGORIES);
 
   const filteredCategories = CATEGORIES.filter((cat) =>
     cat.name.toLowerCase().includes(searchCategory.toLowerCase()),

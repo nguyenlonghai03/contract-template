@@ -14,12 +14,12 @@ const Banner = () => {
         {/* Top Badge */}
         <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold shadow-sm">
           <FileText className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Nền tảng cung cấp hợp đồng số 1 Việt Nam</span>
+          <span>Nền Tảng Hợp Đồng Mẫu Dành Cho Cá Nhân & Doanh Nghiệp</span>
         </div>
 
         {/* Main Title */}
         <h1 className="text-4xl capitalize md:text-6xl font-bold text-red-700 tracking-tight">
-          Thư viện mẫu hợp đồng chuẩn pháp lý
+          Hệ Thống Hợp Đồng Mẫu Chuyên Nghiệp
         </h1>
 
         {/* Subtitle */}
