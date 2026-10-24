@@ -39,3 +39,7 @@ Desktop.ini
 # .NET build artifacts
 bin/
 obj/
+
+
+contract-template-be/storage/contract/
+contract-template-be/storage/
