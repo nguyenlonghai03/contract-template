@@ -40,6 +40,6 @@ Desktop.ini
 bin/
 obj/
 
-
+# Bảo mật cho các file hợp đồng, không push lên github 
 contract-template-be/storage/contract/
 contract-template-be/storage/

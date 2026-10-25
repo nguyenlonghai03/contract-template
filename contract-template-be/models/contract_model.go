@@ -11,9 +11,10 @@ type Contract struct {
 	Slug           string    `json:"slug"`
 	Description    string    `json:"description"`
 	Price          float64   `json:"price"`
-	FileS3Key      string    `json:"file_s3_key"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
+	WordFileName   string    `json:"word_file_name"` // Thêm cột lưu tên file Word
+	PdfFileName    string    `json:"pdf_file_name"`
 	CategoryID     uint      `json:"category_id"`
 	ContractTypeID uint      `json:"contract_type_id"`
 }

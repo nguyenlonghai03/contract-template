@@ -5,8 +5,11 @@ import (
 	// Import package models của bạn vào đây (thay đường dẫn module cho khớp với go.mod của bạn)
 	models "github.com/nguyenlonghai03/contract-template/contract-template-be/models"
 
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"os"
+	"path/filepath"
 )
 
 func GetAllContracts(db *gorm.DB) gin.HandlerFunc {
@@ -106,5 +109,71 @@ func SearchContracts(db *gorm.DB) gin.HandlerFunc {
 			"total":   len(contracts),
 			"data":    contracts,
 		})
+	}
+}
+
+// DownloadContractHandler xử lý kiểm tra và stream file Word/PDF về cho Frontend
+func DownloadContractHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Lấy mã đơn hàng và định dạng file từ query string (Ví dụ: /contracts/download?order_code=HD123&type=word)
+		orderCode := c.Query("order_code")
+		fileType := c.DefaultQuery("type", "pdf") // Mặc định là pdf nếu không truyền type
+
+		if orderCode == "" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Thiếu mã đơn hàng (order_code)",
+			})
+			return
+		}
+
+		// 1. Kiểm tra đơn hàng trong Database có tồn tại và đã thanh toán thành công chưa
+		var order models.Order
+
+		if err := db.Where("id = ? AND status = ?", orderCode, "Success").First(&order).Error; err != nil {
+			c.JSON(http.StatusForbidden, gin.H{
+				"success": false,
+				"message": "Đơn hàng chưa được thanh toán hoặc không tồn tại",
+			})
+			return
+		}
+
+		// 2. Lấy thông tin hợp đồng liên quan đến đơn hàng từ bảng contracts
+		var contract models.Contract
+		if err := db.First(&contract, order.ContractID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{
+				"success": false,
+				"message": "Không tìm thấy thông tin tài liệu hợp đồng",
+			})
+			return
+		}
+
+		// 3. Xác định tên file dựa theo lựa chọn của khách (word hay pdf)
+		var fileName string
+		if fileType == "word" {
+			fileName = contract.WordFileName // Tên file .docx lưu trong DB
+		} else {
+			fileName = contract.PdfFileName // Tên file .pdf lưu trong DB
+		}
+
+		// Đường dẫn tuyệt đối hoặc tương đối tới thư mục lưu trữ cục bộ trên VPS
+		filePath := filepath.Join("./storage/contract", fileName)
+
+		// 4. Kiểm tra file vật lý có thực sự tồn tại trên ổ cứng không
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"success": false,
+				"message": "File tài liệu không tồn tại trên hệ thống",
+			})
+			return
+		}
+
+		// 5. Cấu hình Header để trình duyệt hiểu đây là file đính kèm và kích hoạt tải xuống
+		c.Header("Content-Description", "File Transfer")
+		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", fileName))
+		c.Header("Content-Type", "application/octet-stream")
+
+		// 6. Stream dữ liệu nhị phân của file trực tiếp về cho client
+		c.File(filePath)
 	}
 }
