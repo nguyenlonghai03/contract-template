@@ -156,7 +156,7 @@ export default function PaymentModal({
                     Số tài khoản:
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900 font-mono">
+                    <span className="font-bold text-slate-900 ">
                       {orderInfo.accountNo}
                     </span>
                     <button
@@ -202,7 +202,7 @@ export default function PaymentModal({
                     Nội dung CK:
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-emerald-700 font-mono">
+                    <span className="font-bold text-emerald-700">
                       {orderInfo.transferContent}
                     </span>
                     <button
@@ -233,7 +233,7 @@ export default function PaymentModal({
                 </p>
                 <p>
                   • Nội dung chuyển khoản:{" "}
-                  <strong className="font-mono text-emerald-800">
+                  <strong className="text-emerald-800">
                     {orderInfo.transferContent}
                   </strong>
                 </p>

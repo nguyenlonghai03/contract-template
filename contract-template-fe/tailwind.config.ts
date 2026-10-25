@@ -10,7 +10,14 @@ const config: Config = {
     extend: {
       fontFamily: {
         // Đặt font vừa tạo làm font-sans mặc định
-        sans: ["var(--font-jakarta)", "sans-serif"],
+        // sans: ["var(--font-jakarta)", "sans-serif"],
+        palatino: [
+          '"Palatino Linotype"',
+          "Palatino",
+          "Book Antiqua",
+          "Georgia",
+          "serif",
+        ],
       },
     },
   },

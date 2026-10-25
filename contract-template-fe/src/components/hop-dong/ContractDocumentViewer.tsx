@@ -59,7 +59,7 @@ export default function ContractDocumentViewer({
                       <div className="w-full h-0.5 bg-slate-200 rounded-full"></div>
                       <div className="w-full h-0.5 bg-slate-200 rounded-full"></div>
                     </div>
-                    <div className="text-[8px] text-center text-slate-300 font-mono">
+                    <div className="text-[8px] text-center text-slate-300 ">
                       {pageNum}
                     </div>
                   </div>
@@ -172,7 +172,7 @@ export default function ContractDocumentViewer({
                   </div>
 
                   {/* Số trang góc dưới */}
-                  <div className="absolute bottom-3 left-0 right-0 text-center text-[11px] font-mono text-slate-400">
+                  <div className="absolute bottom-3 left-0 right-0 text-center text-[11px]  text-slate-400">
                     {pageNum}
                   </div>
                 </div>
