@@ -9,7 +9,7 @@ export default function LawyerConsultBanner() {
       <div className="absolute -top-12 -right-12 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
 
       {/* Badge thương hiệu */}
-      <div className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold px-3 py-1 rounded-full">
+      <div className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-sm font-bold px-3 py-1 rounded-full">
         <ShieldCheck className="w-3.5 h-3.5" /> Dịch vụ pháp lý đi kèm
       </div>
 
@@ -18,7 +18,7 @@ export default function LawyerConsultBanner() {
         <h3 className="text-lg font-bold text-white leading-snug">
           Cần hiệu chỉnh & rà soát riêng theo yêu cầu?
         </h3>
-        <p className="text-xs text-slate-300 leading-relaxed">
+        <p className="text-sm text-slate-300 leading-relaxed">
           Đội ngũ Luật sư thuộc Công ty Luật Thiên Mã sẵn sàng hỗ trợ tư vấn,
           chỉnh sửa điều khoản hợp đồng đảm bảo an toàn tuyệt đối cho giao dịch
           của bạn.
@@ -39,7 +39,7 @@ export default function LawyerConsultBanner() {
           href="https://zalo.me"
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 font-semibold py-2.5 px-4 rounded-xl border border-slate-600/60 transition flex items-center justify-center gap-2 text-xs"
+          className="w-full bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 font-semibold py-2.5 px-4 rounded-xl border border-slate-600/60 transition flex items-center justify-center gap-2 text-sm"
         >
           <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
           <span>Tư vấn nhanh qua Zalo</span>

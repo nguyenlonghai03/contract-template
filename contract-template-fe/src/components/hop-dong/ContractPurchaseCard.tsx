@@ -19,13 +19,13 @@ export default function ContractPurchaseCard({
       <div className="bg-white rounded-2xl shadow-xl border border-slate-200/80 p-6 space-y-6 sticky top-24">
         {/* Tiêu đề hợp đồng & Lượt tải */}
         <div className="space-y-2 border-b border-slate-100 pb-4">
-          <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full border border-emerald-100">
+          <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-sm font-bold px-3 py-1 rounded-full border border-emerald-100">
             <ShieldCheck className="w-3.5 h-3.5" /> Đã qua kiểm duyệt
           </div>
           <h2 className="text-lg font-bold text-slate-900 leading-snug">
             Biên bản thanh lý hợp đồng chuyển nhượng salon tóc
           </h2>
-          <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+          <div className="flex items-center justify-between text-sm text-slate-500 pt-1">
             <span>
               Mã tài liệu: <strong>BBTL-50</strong>
             </span>
@@ -38,7 +38,7 @@ export default function ContractPurchaseCard({
         {/* Phần hiển thị Giá tiền */}
         <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 flex items-center justify-between">
           <div>
-            <div className="text-xs text-slate-400">Tải về toàn bộ file</div>
+            <div className="text-sm text-slate-400">Tải về toàn bộ file</div>
             <div className="text-2xl font-black text-emerald-600">55.000 đ</div>
           </div>
           <div className="text-right">
@@ -70,7 +70,7 @@ export default function ContractPurchaseCard({
         </div>
 
         {/* Danh sách cam kết khi mua */}
-        <div className="space-y-2.5 pt-4 border-t border-slate-100 text-xs text-slate-600">
+        <div className="space-y-2.5 pt-4 border-t border-slate-100 text-sm text-slate-600">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>Sở hữu vĩnh viễn định dạng Word (.docx) và PDF.</span>

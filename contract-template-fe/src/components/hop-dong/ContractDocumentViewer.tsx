@@ -65,7 +65,7 @@ export default function ContractDocumentViewer({
                   </div>
 
                   <span
-                    className={`text-xs font-semibold ${
+                    className={`text-sm font-semibold ${
                       isSelected
                         ? "text-emerald-700 font-bold"
                         : "text-slate-600"
@@ -93,17 +93,17 @@ export default function ContractDocumentViewer({
                 <div
                   key={pageNum}
                   id={`contract-page-${pageNum}`}
-                  className="bg-white min-h-[720px] p-6 md:p-10 border border-slate-200 shadow-sm rounded-sm space-y-5 relative text-slate-800 text-xs md:text-sm leading-relaxed overflow-hidden"
+                  className="bg-white min-h-[720px] p-6 md:p-10 border border-slate-200 shadow-sm rounded-sm space-y-5 relative text-slate-800 text-sm md:text-sm leading-relaxed overflow-hidden"
                 >
                   {/* CHE MỜ NỬA BÊN PHẢI VĂN BẢN CỦA TRANG CHỐNG SAO CHÉP */}
                   <div className="absolute right-0 top-0 bottom-0 w-[35%] bg-white/70 backdrop-blur-[2.5px] pointer-events-none select-none z-10 border-l border-slate-100/50" />
 
                   {/* Quốc hiệu tiêu ngữ */}
                   <div className="text-center space-y-1 pb-3 border-b border-slate-100">
-                    <h3 className="font-bold text-slate-900 uppercase tracking-wide text-xs md:text-sm">
+                    <h3 className="font-bold text-slate-900 uppercase tracking-wide text-sm md:text-sm">
                       CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
                     </h3>
-                    <p className="font-bold text-slate-800 text-xs md:text-sm">
+                    <p className="font-bold text-slate-800 text-sm md:text-sm">
                       Độc lập - Tự do - Hạnh phúc
                     </p>
                     <div className="w-20 h-0.5 bg-slate-800 mx-auto mt-1"></div>
@@ -214,7 +214,7 @@ export default function ContractDocumentViewer({
 
             {/* Chữ Tải xuống và nhận ngay xoay dọc */}
             <div className="pt-4 border-t border-emerald-500/60 w-full flex justify-center">
-              <span className="text-[11px] md:text-xs font-black uppercase tracking-wider text-white writing-vertical whitespace-nowrap">
+              <span className="text-[11px] md:text-sm font-black uppercase tracking-wider text-white writing-vertical whitespace-nowrap">
                 Tải xuống và nhận ngay
               </span>
             </div>

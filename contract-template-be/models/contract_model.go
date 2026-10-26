@@ -17,4 +17,19 @@ type Contract struct {
 	PdfFileName    string    `json:"pdf_file_name"`
 	CategoryID     uint      `json:"category_id"`
 	ContractTypeID uint      `json:"contract_type_id"`
+	Views          string    `json:"views" gorm:"column:views"`
+	Downloads      string    `json:"downloads" gorm:"column:downloads"`
+	OriginalPrice  string    `json:"originalPrice" gorm:"column:original_price"`
+	Rating         float64   `json:"rating" gorm:"column:rating"`
+}
+
+type ContractType struct {
+	ID   uint   `json:"id" gorm:"primaryKey"`
+	Name string `json:"name" gorm:"type:varchar(255);not null"`
+	Slug string `json:"slug" gorm:"type:varchar(255);unique;not null"`
+}
+
+// Chỉ định tên bảng nếu cần thiết (mặc định GORM sẽ tìm bảng "contract_types")
+func (ContractType) TableName() string {
+	return "contract_types"
 }

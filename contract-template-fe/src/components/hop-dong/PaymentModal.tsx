@@ -87,7 +87,7 @@ export default function PaymentModal({
         <div className="p-6 overflow-y-auto space-y-5">
           {/* Thông tin đơn hàng chung */}
           <div className="text-center space-y-1">
-            <div className="text-xs text-slate-500">
+            <div className="text-sm text-slate-500">
               Đơn hàng {orderInfo.orderId}
             </div>
             <div className="text-2xl font-extrabold text-emerald-600">
@@ -116,7 +116,7 @@ export default function PaymentModal({
               </div>
 
               {/* Hướng dẫn màu xanh */}
-              <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl p-4 text-xs text-blue-900 space-y-1.5">
+              <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl p-4 text-sm text-blue-900 space-y-1.5">
                 <div className="font-bold text-blue-950 pb-0.5">
                   Hướng dẫn thanh toán
                 </div>
@@ -137,7 +137,7 @@ export default function PaymentModal({
           {/* TAB 2: CHUYỂN KHOẢN */}
           {activeTab === "bank" && (
             <div className="space-y-4 animate-fadeIn">
-              <div className="bg-slate-50/80 border border-slate-100 rounded-2xl p-4 space-y-3 text-xs">
+              <div className="bg-slate-50/80 border border-slate-100 rounded-2xl p-4 space-y-3 text-sm">
                 <div className="text-center text-slate-500 font-medium text-[11px] pb-1">
                   Thông tin chuyển khoản
                 </div>
@@ -223,7 +223,7 @@ export default function PaymentModal({
               </div>
 
               {/* Hướng dẫn màu vàng */}
-              <div className="bg-amber-50/80 border border-amber-200/80 rounded-xl p-4 text-xs text-amber-900 space-y-1.5">
+              <div className="bg-amber-50/80 border border-amber-200/80 rounded-xl p-4 text-sm text-amber-900 space-y-1.5">
                 <div className="font-bold text-amber-950 pb-0.5">
                   Hướng dẫn thanh toán
                 </div>

@@ -87,9 +87,9 @@ export default function CustomerReviews() {
         {reviews.map((item) => (
           <div key={item.id} className="py-5 first:pt-0 last:pb-2 space-y-2">
             {/* Header thông tin người dùng */}
-            <div className="flex items-center gap-2 text-xs md:text-sm">
+            <div className="flex items-center gap-2 text-sm md:text-sm">
               {/* Badge Avatar dạng chữ cái đầu */}
-              <span className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-xs flex items-center justify-center shrink-0">
+              <span className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-sm flex items-center justify-center shrink-0">
                 {item.avatarText}
               </span>
 
@@ -98,12 +98,12 @@ export default function CustomerReviews() {
                 <span className="font-bold text-slate-900">{item.name}</span>
                 <span className="text-slate-300 font-light">|</span>
                 <span className="font-medium text-slate-700">{item.phone}</span>
-                <span className="text-slate-400 text-xs ml-1">{item.date}</span>
+                <span className="text-slate-400 text-sm ml-1">{item.date}</span>
               </div>
             </div>
 
             {/* Nội dung đánh giá */}
-            <p className="text-xs md:text-sm text-slate-600 leading-relaxed pl-9">
+            <p className="text-sm md:text-sm text-slate-600 leading-relaxed pl-9">
               {item.content}
             </p>
           </div>
@@ -112,7 +112,7 @@ export default function CustomerReviews() {
 
       {/* Nút Xem thêm đánh giá */}
       <div className="flex justify-center pt-2">
-        <button className="flex items-center gap-1.5 px-5 py-2 text-xs md:text-sm font-medium text-slate-700 bg-white border border-slate-200/90 rounded-xl hover:bg-slate-50 transition shadow-2xs">
+        <button className="flex items-center gap-1.5 px-5 py-2 text-sm md:text-sm font-medium text-slate-700 bg-white border border-slate-200/90 rounded-xl hover:bg-slate-50 transition shadow-2xs">
           <ChevronDown className="w-4 h-4 text-slate-500" />
           <span>Xem thêm đánh giá</span>
         </button>
@@ -123,7 +123,7 @@ export default function CustomerReviews() {
         <div className="border border-slate-200 rounded-xl p-4 space-y-3 bg-white focus-within:border-emerald-500 transition">
           {/* Chọn số sao đánh giá */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 font-medium">Đánh giá</span>
+            <span className="text-sm text-slate-500 font-medium">Đánh giá</span>
             <div className="flex items-center gap-1">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -152,7 +152,7 @@ export default function CustomerReviews() {
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             placeholder="Hãy để lại những đánh giá mang tính xây dựng, các bình luận sẽ được kiểm duyệt!"
-            className="w-full text-xs md:text-sm text-slate-700 placeholder-slate-400 focus:outline-none bg-transparent resize-y"
+            className="w-full text-sm md:text-sm text-slate-700 placeholder-slate-400 focus:outline-none bg-transparent resize-y"
           />
         </div>
 
@@ -160,7 +160,7 @@ export default function CustomerReviews() {
         <div>
           <button
             type="submit"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs md:text-sm px-5 py-2.5 rounded-xl transition shadow-sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm md:text-sm px-5 py-2.5 rounded-xl transition shadow-sm"
           >
             Gửi đánh giá
           </button>

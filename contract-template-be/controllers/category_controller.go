@@ -11,7 +11,7 @@ import (
 
 // Category định nghĩa cấu trúc dữ liệu tương ứng với bảng categories trong PostgreSQL
 
-// GetCategories xử lý lấy toàn bộ danh sách danh mục hợp đồng
+// GetCategories xử lý lấy toàn bộ danh sách ngành nghề
 func GetCategories(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var categories []models.Category

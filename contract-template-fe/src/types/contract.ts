@@ -7,7 +7,7 @@ export type Contract = {
   categoryId: string;
   categoryName?: string;
   price: number;
-  originalPrice?: number;
+  originalPrice: number;
   viewCount: number;
   downloadCount: number;
   description: string;
@@ -16,6 +16,23 @@ export type Contract = {
   isApproved: boolean;
   createdAt: string;
   updatedAt: string;
+  views: number;
+  rating: number;
+  downloads: number;
+};
+
+export type ContractType = {
+  id: string;
+  name: string;
+  slug?: string;
+};
+
+export type ContractResponse = {
+  data: Contract[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 };
 
 // ================= 2. ĐÁNH GIÁ (REVIEWS) =================

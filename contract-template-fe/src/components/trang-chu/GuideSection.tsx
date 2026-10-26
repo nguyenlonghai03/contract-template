@@ -23,7 +23,7 @@ const GuideSection = () => {
         <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-inner">
           {/* Cột trái: Nội dung thuyết minh theo bước */}
           <div className="space-y-6 max-w-md">
-            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full">
+            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 text-sm font-bold px-3 py-1 rounded-full">
               Bước {activeStep} / 3
             </div>
 
@@ -37,7 +37,7 @@ const GuideSection = () => {
                   trước khi quyết định tải về, đảm bảo đúng nhu cầu sử dụng của
                   bạn.
                 </p>
-                <div className="flex items-center gap-2 text-xs font-medium text-emerald-600">
+                <div className="flex items-center gap-2 text-sm font-medium text-emerald-600">
                   <CheckCircle className="w-4 h-4" /> Minh bạch toàn bộ nội dung
                 </div>
               </div>
@@ -52,7 +52,7 @@ const GuideSection = () => {
                   Quét mã QR bằng điện thoại và thanh toán tự động qua hệ thống
                   SePAY. Hệ thống sẽ tự động xác nhận giao dịch trong vài giây.
                 </p>
-                <div className="flex items-center gap-2 text-xs font-medium text-emerald-600">
+                <div className="flex items-center gap-2 text-sm font-medium text-emerald-600">
                   <CheckCircle className="w-4 h-4" /> Thanh toán an toàn, tức
                   thì
                 </div>
@@ -69,7 +69,7 @@ const GuideSection = () => {
                   tải file văn bản định dạng Word (.docx) và PDF để chỉnh sửa và
                   sử dụng ngay.
                 </p>
-                <div className="flex items-center gap-2 text-xs font-medium text-emerald-600">
+                <div className="flex items-center gap-2 text-sm font-medium text-emerald-600">
                   <CheckCircle className="w-4 h-4" /> Sở hữu trọn đời tài liệu
                 </div>
               </div>
@@ -102,7 +102,7 @@ const GuideSection = () => {
                 <div className="font-bold text-slate-800 text-sm">
                   Giao diện xem trước PDF
                 </div>
-                <p className="text-xs text-slate-500 max-w-xs">
+                <p className="text-sm text-slate-500 max-w-xs">
                   Hiển thị rõ ràng các điều khoản, quốc hiệu, tiêu ngữ và chữ ký
                   mẫu.
                 </p>
@@ -117,7 +117,7 @@ const GuideSection = () => {
                 <div className="font-bold text-slate-800 text-sm">
                   Quét mã QR bằng điện thoại
                 </div>
-                <p className="text-xs text-slate-500 max-w-xs">
+                <p className="text-sm text-slate-500 max-w-xs">
                   Nội dung chuyển khoản được cấu hình sẵn, khớp mã tự động 100%.
                 </p>
               </div>
@@ -131,7 +131,7 @@ const GuideSection = () => {
                 <div className="font-bold text-slate-800 text-sm">
                   Tải về file Word / PDF thành công
                 </div>
-                <p className="text-xs text-slate-500 max-w-xs">
+                <p className="text-sm text-slate-500 max-w-xs">
                   File sạch, chuẩn định dạng pháp lý sẵn sàng điền thông tin.
                 </p>
               </div>

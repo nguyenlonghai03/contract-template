@@ -1,15 +1,27 @@
 package main
 
 import (
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	database "github.com/nguyenlonghai03/contract-template/contract-template-be/database"
 	routes "github.com/nguyenlonghai03/contract-template/contract-template-be/routes"
 	"log"
+	"time"
 )
 
 func main() {
 	//  Khởi tạo Gin Engine (Router mặc định có kèm Logger và Recovery)
 	router := gin.Default()
+
+	// Cấu hình CORS để cho phép Next.js (ví dụ chạy ở http://localhost:3000) gọi API
+	config := cors.Config{}
+	config.AllowOrigins = []string{"http://localhost:3000"}
+	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
+	config.ExposeHeaders = []string{"Content-Length"}
+	config.MaxAge = 12 * time.Hour
+
+	router.Use(cors.New(config))
 
 	db := database.ConnectDatabase()
 

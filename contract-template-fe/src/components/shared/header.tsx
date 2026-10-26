@@ -13,10 +13,10 @@ export default function Header() {
             <Image
               src="/images/logo-hop-dong-phap-ly.png" // Đường dẫn từ thư mục public
               alt="Hợp đồng pháp lý Logo" // Mô tả SEO và Accessibility
-              width={80}
-              height={100} // Chiều cao hiển thị (px)
+              width={64}
+              height={64} // Chiều cao hiển thị (px)
               priority // Ưu tiên tải nhanh vì nằm ở Header đầu trang
-              className="rounded-full object-cover"
+              className="rounded-full object-cover w-auto"
             />
             <span className="hidden md:inline-block font-bold text-[#0A3A2A] text-lg tracking-wide">
               Hợp đồng pháp lý
@@ -38,20 +38,24 @@ export default function Header() {
           </nav>
         </div>
 
-        {/* 3. HOTLINE / EMAIL SUPPORT (Nằm độc lập ở phía bên phải) */}
-        <div className="flex items-center gap-3 border-2 border-emerald-500 text-emerald-600 px-4 py-2 rounded-2xl shadow-sm">
-          <div className="bg-emerald-500 text-white p-2 rounded-full">
-            <Mail className="w-4 h-4" />
+        {/* 3. EMAIL SUPPORT (Tinh chỉnh gọn gàng, sang trọng, không bị thô) */}
+        {/* EMAIL SUPPORT */}
+        <a
+          href="mailto:nguyenlonghai1412@gmail.com"
+          className="flex items-center gap-2.5 bg-slate-50 hover:bg-emerald-50/50 border border-slate-200 hover:border-emerald-300 px-3.5 py-2 rounded-xl transition group shadow-2xs"
+        >
+          <div className="bg-emerald-600 text-white p-1.5 rounded-lg group-hover:scale-105 transition">
+            <Mail className="w-3.5 h-3.5" />
           </div>
           <div className="flex flex-col text-left">
-            <span className="text-[11px] text-slate-500 font-medium leading-none mb-1">
+            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider leading-none mb-1">
               Email hỗ trợ
             </span>
-            <span className="text-base font-extrabold text-emerald-600 leading-none">
+            <span className="text-xs md:text-sm font-bold text-slate-700 group-hover:text-emerald-600 transition leading-none">
               nguyenlonghai1412@gmail.com
             </span>
           </div>
-        </div>
+        </a>
       </div>
     </header>
   );

@@ -8,16 +8,55 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
-func GetAllContracts(db *gorm.DB) gin.HandlerFunc {
+func GetContracts(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Dùng trực tiếp models.Contract
-		var contracts []models.Contract
+		// 1. Lấy tham số phân trang và từ khóa từ query string
+		pageStr := c.DefaultQuery("page", "1")
+		limitStr := c.DefaultQuery("limit", "7")
+		keyword := c.Query("keyword") // Có thể rỗng hoặc có giá trị
 
-		if err := db.Find(&contracts).Error; err != nil {
+		page, err := strconv.Atoi(pageStr)
+		if err != nil || page < 1 {
+			page = 1
+		}
+
+		limit, err := strconv.Atoi(limitStr)
+		if err != nil || limit < 1 {
+			limit = 7
+		}
+
+		offset := (page - 1) * limit
+
+		var contracts []models.Contract
+		var total int64
+
+		// Khởi tạo query base của GORM
+		query := db.Model(&models.Contract{})
+
+		// 2. Kiểm tra nếu có keyword thì áp dụng Full-Text Search thông minh của PostgreSQL
+		if keyword != "" {
+			searchQueryCondition := "to_tsvector('simple', unaccent(title)) @@ plainto_tsquery('simple', unaccent(?))"
+			query = query.Where(searchQueryCondition, keyword)
+		}
+
+		// 3. Đếm tổng số lượng bản ghi (đã tự động tính theo điều kiện lọc nếu có keyword)
+		if err := query.Count(&total).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Lỗi khi đếm tổng số hợp đồng",
+				"error":   err.Error(),
+			})
+			return
+		}
+
+		// 4. Truy vấn dữ liệu có phân trang (Limit, Offset) kèm điều kiện tìm kiếm (nếu có)
+		if err := query.Limit(limit).Offset(offset).Find(&contracts).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
 				"message": "Lỗi khi truy vấn danh sách hợp đồng",
@@ -26,15 +65,45 @@ func GetAllContracts(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		// 5. Tính tổng số trang
+		totalPages := int(math.Ceil(float64(total) / float64(limit)))
+
+		// 6. Trả về kết quả JSON chuẩn cấu trúc phân trang cho Frontend
 		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "Lấy danh sách hợp đồng thành công",
-			"data":    contracts,
+			"success":    true,
+			"message":    "Lấy danh sách hợp đồng thành công",
+			"data":       contracts,
+			"total":      total,
+			"page":       page,
+			"limit":      limit,
+			"totalPages": totalPages,
 		})
 	}
 }
 
-// GetContractsByCategoryID xử lý lấy danh sách hợp đồng thuộc về một danh mục cụ thể
+func GetAllContractTypes(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Dùng trực tiếp models.ContractType
+		var contractTypes []models.ContractType
+
+		if err := db.Find(&contractTypes).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Lỗi khi truy vấn danh sách loại hợp đồng",
+				"error":   err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Lấy danh sách loại hợp đồng thành công",
+			"data":    contractTypes,
+		})
+	}
+}
+
+// GetContractsByCategoryID xử lý lấy danh sách hợp đồng thuộc về một ngành nghề cụ thể
 func GetContractsByCategoryID(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Lấy giá trị category_id từ query string (Ví dụ: /api/v1/contracts/category?category_id=1)
@@ -64,49 +133,6 @@ func GetContractsByCategoryID(db *gorm.DB) gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "Lấy danh sách hợp đồng theo danh mục thành công",
-			"data":    contracts,
-		})
-	}
-}
-
-// SearchContracts tìm kiếm thông minh: Không dấu, không phân biệt thứ tự từ (Full-Text Search)
-func SearchContracts(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		keyword := c.Query("keyword")
-
-		if keyword == "" {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"success": false,
-				"message": "Vui lòng nhập từ khóa tìm kiếm (keyword)",
-			})
-			return
-		}
-
-		var contracts []models.Contract
-
-		// Sử dụng cơ chế Full-Text Search của PostgreSQL kết hợp unaccent:
-		// - unaccent(title): Biến tiêu đề trong DB thành không dấu
-		// - plainto_tsquery('simple', unaccent(?)): Biến từ khóa người dùng thành tập hợp các từ (tokens),
-		//   tự động bỏ dấu và không bắt buộc phải đúng thứ tự gõ.
-		// Hàm to_tsvector('simple', ...) dùng để phân tách từ dựa trên cấu hình 'simple'.
-		query := "to_tsvector('simple', unaccent(title)) @@ plainto_tsquery('simple', unaccent(?))"
-
-		err := db.Where(query, keyword).Find(&contracts).Error
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Lỗi khi tìm kiếm hợp đồng trong cơ sở dữ liệu",
-				"error":   err.Error(),
-			})
-			return
-		}
-
-		// Trả về danh sách kết quả
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "Tìm kiếm hợp đồng thành công",
-			"total":   len(contracts),
 			"data":    contracts,
 		})
 	}
