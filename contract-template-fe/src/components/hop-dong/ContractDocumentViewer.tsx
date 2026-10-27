@@ -3,13 +3,7 @@
 import { useState, useRef } from "react";
 import { CheckCircle2 } from "lucide-react";
 
-interface ContractDocumentViewerProps {
-  slug?: string;
-}
-
-export default function ContractDocumentViewer({
-  slug,
-}: ContractDocumentViewerProps) {
+export default function ContractDocumentViewer() {
   const [activePage, setActivePage] = useState(1);
   const totalPages = 5;
 

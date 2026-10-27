@@ -81,7 +81,7 @@ const ContractList = ({ searchQuery }: ContractListProps) => {
                 <div className="space-y-1.5 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <Link
-                      href={`/hop-dong/${item.id}`}
+                      href={`/hop-dong/${item.slug}-${item.id}`}
                       className="font-semibold text-slate-900 text-sm hover:text-blue-600 transition line-clamp-1"
                     >
                       {item.title}

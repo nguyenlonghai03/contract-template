@@ -13,6 +13,8 @@ func main() {
 	//  Khởi tạo Gin Engine (Router mặc định có kèm Logger và Recovery)
 	router := gin.Default()
 
+	router.SetTrustedProxies(nil)
+
 	// Cấu hình CORS để cho phép Next.js (ví dụ chạy ở http://localhost:3000) gọi API
 	config := cors.Config{}
 	config.AllowOrigins = []string{"http://localhost:3000"}

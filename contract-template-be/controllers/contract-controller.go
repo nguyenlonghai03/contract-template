@@ -4,14 +4,16 @@ import (
 	"net/http"
 	// Import package models của bạn vào đây (thay đường dẫn module cho khớp với go.mod của bạn)
 	models "github.com/nguyenlonghai03/contract-template/contract-template-be/models"
+	"github.com/nguyenlonghai03/contract-template/contract-template-be/services"
 
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 	"math"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func GetContracts(db *gorm.DB) gin.HandlerFunc {
@@ -201,5 +203,55 @@ func DownloadContractHandler(db *gorm.DB) gin.HandlerFunc {
 
 		// 6. Stream dữ liệu nhị phân của file trực tiếp về cho client
 		c.File(filePath)
+	}
+}
+
+// Nhận vào db *gorm.DB để thao tác với cơ sở dữ liệu
+func GeneratePreviewHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Nhận tham số file PDF và ID hoặc Slug của hợp đồng cần gán
+		// Ví dụ: /api/contract/generate-preview?file=thue-nha.pdf&id=1
+		fileName := c.Query("file")
+		contractID := c.Query("id")
+
+		if fileName == "" || contractID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Thiếu tên file hoặc ID hợp đồng"})
+			return
+		}
+
+		pdfPath := filepath.Join("./storage/contract", fileName)
+		outputFolder := "./storage/previews"
+		urlPrefix := "/storage/previews"
+
+		// 1. Gọi Service cắt PDF và tạo watermark
+		previewImages, err := services.GenerateContractPreviews(pdfPath, outputFolder, urlPrefix)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		// 2. 🗄️ GÁN VÀO DATABASE THÔNG QUA GORM
+		// Tìm hợp đồng theo ID và cập nhật cột preview_images
+		var contract models.Contract
+		if err := db.First(&contract, contractID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hợp đồng trong Database"})
+			return
+		}
+
+		// Gán mảng đường dẫn ảnh vào trường PreviewImages của Model
+		contract.PreviewImages = previewImages
+
+		// Lưu thay đổi xuống PostgreSQL
+		if err := db.Save(&contract).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lưu vào Database: " + err.Error()})
+			return
+		}
+
+		// 3. Trả về kết quả thành công
+		c.JSON(http.StatusOK, gin.H{
+			"message":        "Đã tạo preview và cập nhật DB thành công!",
+			"contract_id":    contract.ID,
+			"preview_images": previewImages,
+		})
 	}
 }
