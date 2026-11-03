@@ -28,6 +28,12 @@ export type ContractType = {
   slug?: string;
 };
 
+// Định nghĩa kiểu cho response bọc (ví dụ)
+export type ContractTypeResponse = {
+  data: ContractType[];
+  // các trường phụ nếu có như message, success...
+};
+
 export type ContractResponse = {
   data: Contract[];
   total: number;

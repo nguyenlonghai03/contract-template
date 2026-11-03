@@ -2,7 +2,6 @@ import ContractDocumentViewer from "@/components/hop-dong/ContractDocumentViewer
 import ContractInformation from "@/components/hop-dong/ContractInformation";
 import ContractPurchaseCard from "@/components/hop-dong/ContractPurchaseCard";
 import CustomerReviews from "@/components/hop-dong/CustomerReviews";
-import LawyerConsultBanner from "@/components/hop-dong/LawyerConsultBanner";
 import { getContractById } from "@/services/contractApi";
 import { notFound } from "next/navigation";
 

@@ -1,8 +1,16 @@
-import { ContractResponse } from "@/types/contract";
+import {
+  Contract,
+  ContractResponse,
+  ContractType,
+  ContractTypeResponse,
+} from "@/types/contract";
 import { axiosClient } from "./axiosClient";
 
-export const getContractTypes = async () => {
-  const response = await axiosClient.get("/contract-types");
+export const getContractTypes = async (): Promise<ContractType[]> => {
+  // Thay vì any, hãy định nghĩa kiểu dữ liệu cụ thể cho contract types nếu có (ví dụ: ContractType[])
+  const response = await axiosClient.get<unknown, ContractTypeResponse>(
+    "/contract-types",
+  );
   return response.data;
 };
 
@@ -11,7 +19,8 @@ export async function getContracts(
   limit: number = 5,
   searchQuery: string = "",
 ): Promise<ContractResponse> {
-  const res = await axiosClient.get<ContractResponse>("/contracts", {
+  // Dùng trực tiếp ContractResponse cho kiểu dữ liệu trả về của axios
+  const res = await axiosClient.get<unknown, ContractResponse>("/contracts", {
     params: {
       page,
       limit,
@@ -19,23 +28,27 @@ export async function getContracts(
     },
   });
 
-  return res as unknown as ContractResponse;
+  return res;
 }
 
-// Thêm hàm gọi API vào file service của bạn
 export const getContractById = async (id: string | number) => {
-  // Vì interceptor đã trả về response.data, nên res ở đây chính là dữ liệu JSON từ Backend
-  const res = await axiosClient.get(`/contracts/${id}`);
+  const res = await axiosClient.get<
+    unknown,
+    { data: Contract; success: boolean }
+  >(`/contracts/${id}`);
   return res;
 };
 
 export const getContractsByContractType = async (
   typeId: number | string,
-  page = 1,
-  limit = 6,
-) => {
-  const res = await axiosClient.get(
-    `/contracts/type/${typeId}?page=${page}&limit=${limit}`,
+  page: number = 1,
+  limit: number = 6,
+): Promise<ContractResponse> => {
+  const res = await axiosClient.get<unknown, ContractResponse>(
+    `/contracts/type/${typeId}`,
+    {
+      params: { page, limit },
+    },
   );
   return res;
 };

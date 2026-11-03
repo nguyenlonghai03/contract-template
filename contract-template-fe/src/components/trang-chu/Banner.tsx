@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import SearchBox from "./SearchBox";
 
 const Banner = () => {
@@ -16,7 +17,9 @@ const Banner = () => {
 
         {/* Search Bar Box */}
         <div className="pt-4 max-w-2xl mx-auto">
-          <SearchBox />
+          <Suspense>
+            <SearchBox />
+          </Suspense>
 
           {/* Popular Search Suggestions */}
           <div className="mt-3 text-sm md:text-sm text-slate-500 flex flex-wrap items-center justify-center gap-1.5">

@@ -1,13 +1,15 @@
 import Banner from "@/components/trang-chu/Banner";
 import ContractCatalog from "@/components/trang-chu/ContractCatalog";
-import GuideSection from "@/components/trang-chu/GuideSection";
+import { Suspense } from "react";
 
 const HomePage = () => {
   return (
     <div className="space-y-16 pb-16">
       <Banner />
       {/* <GuideSection /> */}
-      <ContractCatalog />
+      <Suspense>
+        <ContractCatalog />
+      </Suspense>
     </div>
   );
 };
