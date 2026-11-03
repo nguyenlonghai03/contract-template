@@ -48,7 +48,7 @@ export default async function ContractDetailPage({
             {/* Truyền object contract chứa preview_images vào component xem trước */}
             <ContractDocumentViewer
               contract={contract}
-              baseUrl={process.env.NEXT_API_BASE_URL}
+              baseUrl={process.env.NEXT_PUBLIC_API_BASE_URL}
             />
 
             {/* Truyền thông tin chi tiết hợp đồng vào phần mô tả */}
