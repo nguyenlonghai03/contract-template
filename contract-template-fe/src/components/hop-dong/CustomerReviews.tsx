@@ -79,7 +79,7 @@ export default function CustomerReviews() {
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 md:p-8 space-y-6 text-slate-800">
       {/* Tiêu đề phần đánh giá */}
       <h3 className="text-base md:text-lg font-bold text-slate-900">
-        Đánh giá từ khách hàng ({reviews.length})
+        Đánh giá từ khách hàng nè ({reviews.length})
       </h3>
 
       {/* Danh sách các đánh giá */}
