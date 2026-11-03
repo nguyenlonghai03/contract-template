@@ -6,6 +6,7 @@ import (
 	models "github.com/nguyenlonghai03/contract-template/contract-template-be/models"
 	"github.com/nguyenlonghai03/contract-template/contract-template-be/services"
 
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -143,7 +144,6 @@ func GetContractsByCategoryID(db *gorm.DB) gin.HandlerFunc {
 // DownloadContractHandler xử lý kiểm tra và stream file Word/PDF về cho Frontend
 func DownloadContractHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Lấy mã đơn hàng và định dạng file từ query string (Ví dụ: /contracts/download?order_code=HD123&type=word)
 		orderCode := c.Query("order_code")
 		fileType := c.DefaultQuery("type", "pdf") // Mặc định là pdf nếu không truyền type
 
@@ -155,9 +155,8 @@ func DownloadContractHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// 1. Kiểm tra đơn hàng trong Database có tồn tại và đã thanh toán thành công chưa
+		// 1. Kiểm tra đơn hàng trong Database
 		var order models.Order
-
 		if err := db.Where("id = ? AND status = ?", orderCode, "Success").First(&order).Error; err != nil {
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
@@ -166,7 +165,7 @@ func DownloadContractHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// 2. Lấy thông tin hợp đồng liên quan đến đơn hàng từ bảng contracts
+		// 2. Lấy thông tin hợp đồng liên quan đến đơn hàng
 		var contract models.Contract
 		if err := db.First(&contract, order.ContractID).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
@@ -176,18 +175,18 @@ func DownloadContractHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// 3. Xác định tên file dựa theo lựa chọn của khách (word hay pdf)
+		// 3. Xác định tên file dựa theo lựa chọn của khách
 		var fileName string
 		if fileType == "word" {
-			fileName = contract.WordFileName // Tên file .docx lưu trong DB
+			fileName = contract.WordFileName
 		} else {
-			fileName = contract.PdfFileName // Tên file .pdf lưu trong DB
+			fileName = contract.PdfFileName
 		}
 
-		// Đường dẫn tuyệt đối hoặc tương đối tới thư mục lưu trữ cục bộ trên VPS
+		// Đường dẫn tới thư mục lưu trữ cục bộ
 		filePath := filepath.Join("./storage/contract", fileName)
 
-		// 4. Kiểm tra file vật lý có thực sự tồn tại trên ổ cứng không
+		// 4. Kiểm tra file vật lý có thực sự tồn tại không
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			c.JSON(http.StatusNotFound, gin.H{
 				"success": false,
@@ -196,10 +195,15 @@ func DownloadContractHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// 5. Cấu hình Header để trình duyệt hiểu đây là file đính kèm và kích hoạt tải xuống
+		// 5. Cấu hình Header linh hoạt cho từng loại file (Rất quan trọng cho PDF)
 		c.Header("Content-Description", "File Transfer")
 		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", fileName))
-		c.Header("Content-Type", "application/octet-stream")
+
+		if fileType == "word" {
+			c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+		} else {
+			c.Header("Content-Type", "application/pdf") // 🟢 Ép đúng Header Content-Type cho PDF
+		}
 
 		// 6. Stream dữ liệu nhị phân của file trực tiếp về cho client
 		c.File(filePath)
@@ -210,7 +214,7 @@ func DownloadContractHandler(db *gorm.DB) gin.HandlerFunc {
 func GeneratePreviewHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Nhận tham số file PDF và ID hoặc Slug của hợp đồng cần gán
-		// Ví dụ: /api/contract/generate-preview?file=thue-nha.pdf&id=1
+		// Ví dụ: /api/contract/generate-preview?file=thue-nha.pdf&id=1 // Id này là id của hợp đồng
 		fileName := c.Query("file")
 		contractID := c.Query("id")
 
@@ -252,6 +256,83 @@ func GeneratePreviewHandler(db *gorm.DB) gin.HandlerFunc {
 			"message":        "Đã tạo preview và cập nhật DB thành công!",
 			"contract_id":    contract.ID,
 			"preview_images": previewImages,
+		})
+	}
+}
+
+// GetContractByID xử lý lấy thông tin chi tiết hợp đồng theo ID
+func GetContractByID(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Lấy param category_id từ URL (ví dụ: /api/contracts/1)
+		id := c.Param("id")
+
+		var contract models.Contract
+
+		// Truy vấn vào PostgreSQL tìm hợp đồng theo ID
+		if err := db.First(&contract, id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{
+					"error": "Không tìm thấy mẫu hợp đồng này",
+				})
+				return
+			}
+			// Lỗi hệ thống Database khác
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Lỗi truy vấn cơ sở dữ liệu: " + err.Error(),
+			})
+			return
+		}
+
+		// Trả về thông tin hợp đồng kèm danh sách link ảnh preview trên R2
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data":    contract,
+		})
+	}
+}
+
+// GetContractsByType xử lý lấy danh sách hợp đồng theo loại/danh mục chuyên biệt
+func GetContractsByType(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Lấy contract_type từ URL Param (Ví dụ: /api/v1/contracts/type/mua-ban)
+		contractType := c.Param("type")
+
+		// Hoặc hỗ trợ phân trang cơ bản nếu danh sách nhiều
+		pageStr := c.DefaultQuery("page", "1")
+		limitStr := c.DefaultQuery("limit", "6")
+
+		page, _ := strconv.Atoi(pageStr)
+		limit, _ := strconv.Atoi(limitStr)
+		offset := (page - 1) * limit
+
+		var contracts []models.Contract
+		var total int64
+
+		query := db.Model(&models.Contract{}).Where("contract_type_id = ?", contractType)
+
+		// Đếm tổng số lượng
+		query.Count(&total)
+
+		// Truy vấn dữ liệu phân trang
+		if err := query.Limit(limit).Offset(offset).Find(&contracts).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Lỗi khi lấy danh sách hợp đồng theo loại",
+				"error":   err.Error(),
+			})
+			return
+		}
+
+		totalPages := int(math.Ceil(float64(total) / float64(limit)))
+
+		c.JSON(http.StatusOK, gin.H{
+			"success":    true,
+			"message":    "Lấy danh sách hợp đồng theo loại thành công",
+			"data":       contracts,
+			"total":      total,
+			"page":       page,
+			"limit":      limit,
+			"totalPages": totalPages,
 		})
 	}
 }

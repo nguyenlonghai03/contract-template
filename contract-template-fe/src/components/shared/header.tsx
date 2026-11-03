@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Mail } from "lucide-react";
 import Image from "next/image";
+import NavLink from "./NavLink";
 
 export default function Header() {
   return (
-    <header className="w-full bg-white border-b border-slate-100 sticky top-0 z-50 shadow-sm">
+    <header className="w-full bg-white border-b border-slate-100 sticky top-0 z-10 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 h-20q flex items-center justify-between">
         {/* KHỐI BÊN TRÁI: Nhóm Logo + Nav Menu nằm gần nhau */}
         <div className="flex items-center gap-10 md:gap-14 ">
@@ -25,16 +26,11 @@ export default function Header() {
 
           {/* 2. NAVIGATION MENU (Lệch hẳn về bên trái gần Logo) */}
           <nav className="hidden md:flex items-center gap-8 font-medium text-slate-800 pl-6 border-l border-gray-300">
-            <Link href="/" className="  ">
+            <NavLink href="/" exact={true}>
               Trang chủ
-            </Link>
+            </NavLink>
 
-            <Link
-              href="/ve-chung-toi"
-              className="hover:text-red-700 transition"
-            >
-              Về chúng tôi
-            </Link>
+            <NavLink href="/ve-chung-toi">Về chúng tôi</NavLink>
           </nav>
         </div>
 
@@ -51,7 +47,7 @@ export default function Header() {
             <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider leading-none mb-1">
               Email hỗ trợ
             </span>
-            <span className="text-xs md:text-sm font-bold text-slate-700 group-hover:text-emerald-600 transition leading-none">
+            <span className="text-sm md:text-sm font-bold text-slate-700 group-hover:text-emerald-600 transition leading-none">
               nguyenlonghai1412@gmail.com
             </span>
           </div>

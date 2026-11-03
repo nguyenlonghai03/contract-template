@@ -9,11 +9,15 @@ import (
 func SetupUnProtectedRoutes(router *gin.Engine, db *gorm.DB) {
 
 	router.GET("/categories", controllers.GetCategories(db))
+	router.GET("/contract-types", controllers.GetAllContractTypes(db))
+
 	router.GET("/contracts", controllers.GetContracts(db))
 	router.GET("/contract/download", controllers.DownloadContractHandler(db))
-	router.GET("/contract-types", controllers.GetAllContractTypes(db))
-	router.GET("/contract/:category_id", controllers.GetContractsByCategoryID(db))
 	router.GET("/contract/generate-preview", controllers.GeneratePreviewHandler(db))
+
+	router.GET("/contracts/category/:category_id", controllers.GetContractsByCategoryID(db))
+	router.GET("/contracts/type/:type", controllers.GetContractsByType(db))
+	router.GET("/contracts/:id", controllers.GetContractByID(db))
 	// Đăng ký route Webhook trong file main.go của bạn
 	router.POST("/webhook/bank", controllers.SePayWebhookHandler(db))
 	// Ví dụ đặt trong protected_routes.go (yêu cầu đăng nhập mới gọi được API mua hàng)

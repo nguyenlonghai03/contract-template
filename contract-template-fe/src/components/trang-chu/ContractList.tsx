@@ -10,7 +10,10 @@ import {
   PaginationPrevious,
 } from "../ui/pagination";
 import { ContractResponse } from "@/types/contract";
-import { getContracts } from "@/services/contractApi";
+import {
+  getContracts,
+  getContractsByContractType,
+} from "@/services/contractApi";
 import { useState } from "react";
 import { Skeleton } from "../ui/skeleton";
 import Link from "next/link";
@@ -18,18 +21,26 @@ import { CheckCircle2, Download, Eye, Star } from "lucide-react";
 
 type ContractListProps = {
   searchQuery?: string;
+  selectedId?: string | number | null;
 };
 
-const ContractList = ({ searchQuery }: ContractListProps) => {
+const ContractList = ({ searchQuery, selectedId }: ContractListProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
 
   // Query lấy danh sách hợp đồng bên phải có phân trang từ Backend
   const { data: contractData, isLoading: isContractsLoading } =
     useQuery<ContractResponse>({
-      queryKey: ["contracts", currentPage, searchQuery],
-      queryFn: () => getContracts(currentPage, pageSize, searchQuery),
-      placeholderData: (previousData) => previousData, // Giữ dữ liệu cũ khi chuyển trang để mượt hơn
+      // 🔄 Thêm selectedId vào queryKey để tự động refetch khi user bấm chọn danh mục khác
+      queryKey: ["contracts", currentPage, searchQuery, selectedId],
+      queryFn: () => {
+        // ➕ Nếu người dùng có chọn danh mục bên trái thì gọi API theo type ID, ngược lại gọi API danh sách chung
+        if (selectedId) {
+          return getContractsByContractType(selectedId, currentPage, pageSize);
+        }
+        return getContracts(currentPage, pageSize, searchQuery);
+      },
+      placeholderData: (previousData) => previousData,
     });
 
   return (

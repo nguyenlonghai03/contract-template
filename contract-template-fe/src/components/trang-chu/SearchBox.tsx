@@ -31,7 +31,7 @@ export default function SearchBox() {
         name="q"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        placeholder="Nhập tên hợp đồng, dịch vụ pháp lý cần tìm..."
+        placeholder="Nhập tên hợp đồng cần tìm..."
         className="w-full px-3 py-2 text-slate-800 placeholder-slate-400 focus:outline-none text-sm md:text-base bg-transparent"
       />
       <button

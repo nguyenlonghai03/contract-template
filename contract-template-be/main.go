@@ -19,8 +19,9 @@ func main() {
 	config := cors.Config{}
 	config.AllowOrigins = []string{"http://localhost:3000"}
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
-	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
-	config.ExposeHeaders = []string{"Content-Length"}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Accept", "X-Requested-With"}
+	config.ExposeHeaders = []string{"Content-Disposition", "Content-Length"} // Xóa sau khi code xong
+	// config.ExposeHeaders = []string{"Content-Length"}
 	config.MaxAge = 12 * time.Hour
 
 	router.Use(cors.New(config))

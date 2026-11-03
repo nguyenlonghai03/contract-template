@@ -2,53 +2,50 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { Contract } from "@/types/contract";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-interface ContractInformationProps {
-  slug?: string;
-}
+type ContractInformationProps = {
+  contract: Contract;
+};
 
 export default function ContractInformation({
-  slug,
+  contract,
 }: ContractInformationProps) {
-  // Quản lý Tab được chọn ("overview" | "guide")
-  const [activeTab, setActiveTab] = useState<"overview" | "guide">("overview");
-
   // Quản lý trạng thái Xem thêm / Thu gọn
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden space-y-6">
-      {/* ================= 1. THANH TAB ĐIỀU HƯỚNG ================= */}
-      <div className="flex border-b border-slate-200/80 px-6 pt-4">
-        <button
-          onClick={() => setActiveTab("overview")}
-          className={`flex-1 pb-3 text-sm md:text-base font-semibold text-center transition border-b-2 relative ${
-            activeTab === "overview"
-              ? "border-emerald-600 text-emerald-600 font-bold"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          Giới thiệu
-        </button>
+      {/* Sử dụng shadcn/ui Tabs */}
+      <Tabs defaultValue="overview" className="w-full">
+        {/* ================= 1. THANH TAB ĐIỀU HƯỚNG ================= */}
+        <div className="flex border-b border-slate-200/80 px-6 pt-4">
+          <TabsList className="w-full bg-transparent p-0 h-auto justify-between gap-0 rounded-none bg-none">
+            <TabsTrigger
+              value="overview"
+              className="flex-1 pb-3 text-sm md:text-base font-semibold text-center transition border-b-2 rounded-none bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none border-transparent data-[state=active]:border-emerald-600 text-slate-500 data-[state=active]:text-emerald-600 data-[state=active]:font-bold"
+            >
+              Giới thiệu
+            </TabsTrigger>
 
-        <button
-          onClick={() => setActiveTab("guide")}
-          className={`flex-1 pb-3 text-sm md:text-base font-semibold text-center transition border-b-2 relative ${
-            activeTab === "guide"
-              ? "border-emerald-600 text-emerald-600 font-bold"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          <span>Hướng dẫn</span>
-          {/* Dấu chấm màu xanh nhỏ góc phải Tab Hướng dẫn */}
-          <span className="absolute top-0 right-1/4 w-2 h-2 bg-emerald-500 rounded-full" />
-        </button>
-      </div>
+            <TabsTrigger
+              value="guide"
+              className="flex-1 pb-3 text-sm md:text-base font-semibold text-center transition border-b-2 rounded-none bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none border-transparent data-[state=active]:border-emerald-600 text-slate-500 data-[state=active]:text-emerald-600 data-[state=active]:font-bold relative"
+            >
+              <span>Hướng dẫn</span>
+              {/* Dấu chấm màu xanh nhỏ góc phải Tab Hướng dẫn */}
+              <span className="absolute top-0 right-1/4 w-2 h-2 bg-emerald-500 rounded-full" />
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-      <div className="p-6 md:p-8 pt-0 space-y-6 text-slate-700 leading-relaxed text-sm md:text-base">
-        {/* ================= TAB 1: GIỚI THIỆU ================= */}
-        {activeTab === "overview" && (
-          <div className="space-y-6 animate-fadeIn">
+        <div className="p-6 md:p-8 pt-0 space-y-6 text-slate-700 leading-relaxed text-sm md:text-base">
+          {/* ================= TAB 1: GIỚI THIỆU ================= */}
+          <TabsContent
+            value="overview"
+            className="space-y-6 mt-0 animate-fadeIn outline-none"
+          >
             {/* Khối tóm tắt đầu trang */}
             <div className="bg-slate-50/80 border border-slate-200/70 rounded-xl p-4 text-slate-700 text-sm leading-relaxed">
               Biên bản thanh lý hợp đồng chuyển nhượng salon tóc được sử dụng để
@@ -131,12 +128,13 @@ export default function ContractInformation({
                 <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
               )}
             </div>
-          </div>
-        )}
+          </TabsContent>
 
-        {/* ================= TAB 2: HƯỚNG DẪN ================= */}
-        {activeTab === "guide" && (
-          <div className="space-y-6 animate-fadeIn">
+          {/* ================= TAB 2: HƯỚNG DẪN ================= */}
+          <TabsContent
+            value="guide"
+            className="space-y-6 mt-0 animate-fadeIn outline-none"
+          >
             <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 uppercase">
               Hướng dẫn điền BIÊN BẢN THANH LÝ HỢP ĐỒNG CHUYỂN NHƯỢNG SALON TÓC
             </h2>
@@ -227,23 +225,23 @@ export default function ContractInformation({
                 <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
               )}
             </div>
-          </div>
-        )}
-
-        {/* ================= NÚT BẤM XEM THÊM / THU GỌN ================= */}
-        <div className="pt-4 border-t border-slate-100 flex justify-center">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-emerald-600 transition bg-white px-4 py-2 rounded-full border border-slate-200/80 shadow-2xs hover:border-emerald-300"
-          >
-            <span>{isExpanded ? "Thu gọn" : "Xem thêm"}</span>
-            {isExpanded ? (
-              <ChevronUp className="w-4 h-4" />
-            ) : (
-              <ChevronDown className="w-4 h-4" />
-            )}
-          </button>
+          </TabsContent>
         </div>
+      </Tabs>
+
+      {/* ================= NÚT BẤM XEM THÊM / THU GỌN ================= */}
+      <div className="px-6 pb-6 pt-0 border-t border-slate-100 flex justify-center">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-emerald-600 transition bg-white px-4 py-2 rounded-full border border-slate-200/80 shadow-2xs hover:border-emerald-300 mt-4"
+        >
+          <span>{isExpanded ? "Thu gọn" : "Xem thêm"}</span>
+          {isExpanded ? (
+            <ChevronUp className="w-4 h-4" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
+          )}
+        </button>
       </div>
     </div>
   );

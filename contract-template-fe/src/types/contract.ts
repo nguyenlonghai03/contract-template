@@ -19,6 +19,7 @@ export type Contract = {
   views: number;
   rating: number;
   downloads: number;
+  preview_images: string[];
 };
 
 export type ContractType = {
@@ -61,35 +62,8 @@ export type PaymentOrder = {
   qrCodeUrl?: string;
 };
 
-// ================= 4. TRÌNH XEM TRƯỚC TÀI LIỆU (DOCUMENT VIEWER) =================
-export type ContractPage = {
-  pageNumber: number;
-  thumbnailUrl?: string;
-  textContent?: string;
-  isSecured?: boolean;
-};
-
-// ================= 5. PROPS CHO CÁC COMPONENT CHÍNH =================
-export type ContractDetailPageProps = {
-  contract: Contract;
-  initialReviews: ContractReview[];
-  relatedContracts: Contract[];
-};
-
-export type ContractDocumentViewerProps = {
-  slug: string;
-  pages?: ContractPage[];
-};
-
-export type ContractInformationProps = {
-  contract: Contract;
-};
-
-export type ContractPurchaseCardProps = {
-  contract: Contract;
-};
-
-export type ContractReviewsProps = {
-  contractId: string;
-  initialReviews: ContractReview[];
+export type PaymentStatusResponse = {
+  success: boolean;
+  message: string;
+  status: "Pending" | "Success" | "Cancelled";
 };

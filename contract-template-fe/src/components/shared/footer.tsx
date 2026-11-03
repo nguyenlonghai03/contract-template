@@ -23,7 +23,7 @@ export default function Footer() {
                 className="object-contain w-auto h-auto"
               />
             </div>
-            <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
+            <p className="text-slate-500 text-sm sm:text-sm leading-relaxed">
               Hệ thống mẫu hợp đồng pháp lý chuẩn xác, hỗ trợ tối ưu cho cá nhân
               và doanh nghiệp.
             </p>
@@ -34,7 +34,7 @@ export default function Footer() {
               Liên hệ
             </h4>
             <div className="space-y-1.5 text-slate-600 text-sm">
-              <p className="text-slate-500 text-xs">Hỗ trợ giải đáp:</p>
+              <p className="text-slate-500 text-sm">Hỗ trợ giải đáp:</p>
               <span className="font-medium text-slate-800 hover:text-emerald-600 transition break-all block">
                 nguyenlonghai1412@gmail.com
               </span>
@@ -90,7 +90,7 @@ export default function Footer() {
         </div>
 
         {/* DÒNG BẢN QUYỀN GỌN GÀNG PHÍA DƯỚI (Không bị trùng lặp) */}
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-4">
+        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-sm text-slate-400 gap-4">
           <p>
             © {new Date().getFullYear()} Hợp Đồng Pháp Lý. All rights reserved.
           </p>

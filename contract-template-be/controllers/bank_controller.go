@@ -125,9 +125,11 @@ func GenerateQRCodeHandler(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		// 4. Cấu hình thông tin tài khoản ngân hàng nhận tiền
-		bankID := "TPB"            // Mã ngân hàng (VD: VCB, MB, Techcombank...)
-		accountNo := "04494162701" // Số tài khoản nhận tiền của bạn
-		template := "compact2"     // Kiểu hiển thị mã QR
+		bankID := "TPB"                  // Mã ngân hàng (VD: VCB, MB, Techcombank...)
+		accountNo := "04494162701"       // Số tài khoản nhận tiền của bạn
+		template := "compact"            // Kiểu hiển thị mã QR
+		accountName := "NGUYEN LONG HAI" // Tên chủ tài khoản thực tế của bạn
+		bankName := "TPBank (Ngân hàng TMCP Tiên Phong)"
 
 		// 5. Tạo đường dẫn ảnh QR VietQR tự động
 		qrCodeURL := fmt.Sprintf("https://img.vietqr.io/image/%s-%s-%s.png?amount=%.0f&addInfo=%s",
@@ -135,11 +137,14 @@ func GenerateQRCodeHandler(db *gorm.DB) gin.HandlerFunc {
 
 		// 6. Trả về kết quả cho FE hiển thị
 		c.JSON(http.StatusOK, gin.H{
-			"success":     true,
-			"order_code":  orderCode,
-			"amount":      amount,
-			"qr_code_url": qrCodeURL, // FE sẽ dùng link này gán vào thẻ <img src="...">
-			"message":     "Tạo mã QR thanh toán thành công",
+			"success":      true,
+			"order_code":   orderCode,
+			"amount":       amount,
+			"bank_name":    bankName,
+			"account_no":   accountNo,
+			"account_name": accountName,
+			"qr_code_url":  qrCodeURL, // FE sẽ dùng link này gán vào thẻ <img src="...">
+			"message":      "Tạo mã QR thanh toán thành công",
 		})
 	}
 }

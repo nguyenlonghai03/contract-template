@@ -148,7 +148,11 @@ const ContractCatalog = () => {
           </div>
 
           {/* CỘT PHẢI: DANH SÁCH HỢP ĐỒNG (8 Cột) */}
-          <ContractList key={searchQuery} searchQuery={searchQuery} />
+          <ContractList
+            key={`${searchQuery}-${selectedId}`}
+            selectedId={selectedId}
+            searchQuery={searchQuery}
+          />
         </div>
       </div>
     </section>

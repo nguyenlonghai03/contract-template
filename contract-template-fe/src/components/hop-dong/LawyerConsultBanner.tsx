@@ -14,19 +14,14 @@ export default function LawyerConsultBanner() {
       </div>
 
       {/* Nội dung tiêu đề */}
-      <div className="space-y-2 relative z-10">
+      <div className="space-y-2 relative ">
         <h3 className="text-lg font-bold text-white leading-snug">
           Cần hiệu chỉnh & rà soát riêng theo yêu cầu?
         </h3>
-        <p className="text-sm text-slate-300 leading-relaxed">
-          Đội ngũ Luật sư thuộc Công ty Luật Thiên Mã sẵn sàng hỗ trợ tư vấn,
-          chỉnh sửa điều khoản hợp đồng đảm bảo an toàn tuyệt đối cho giao dịch
-          của bạn.
-        </p>
       </div>
 
       {/* Thông tin hotline & nút liên hệ */}
-      <div className="space-y-2.5 pt-2 relative z-10">
+      <div className="space-y-2.5 pt-2 relative ">
         <a
           href="tel:0977523155"
           className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/50 text-sm"
