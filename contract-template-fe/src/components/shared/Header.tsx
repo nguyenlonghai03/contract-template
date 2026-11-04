@@ -17,7 +17,7 @@ export default function Header() {
               width={64}
               height={64} // Chiều cao hiển thị (px)
               priority // Ưu tiên tải nhanh vì nằm ở Header đầu trang
-              className="rounded-full object-cover w-auto"
+              className="rounded-full object-cover"
             />
             <span className="hidden md:inline-block font-bold text-[#0A3A2A] text-lg tracking-wide">
               Hợp đồng pháp lý
