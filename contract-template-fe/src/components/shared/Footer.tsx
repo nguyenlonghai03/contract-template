@@ -17,10 +17,10 @@ export default function Footer() {
               <Image
                 src="/images/hop-dong-phap-ly-logo (1).png"
                 alt="Hợp đồng pháp lý Logo"
-                width={140}
+                width={192}
                 height={60}
                 priority
-                className="object-contain w-auto h-auto"
+                className="object-contain"
               />
             </div>
             <p className="text-slate-500 text-sm sm:text-sm leading-relaxed">
