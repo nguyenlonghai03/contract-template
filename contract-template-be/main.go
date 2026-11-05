@@ -1,12 +1,14 @@
 package main
 
 import (
+	"log"
+	"os"
+	"time"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	database "github.com/nguyenlonghai03/contract-template/contract-template-be/database"
 	routes "github.com/nguyenlonghai03/contract-template/contract-template-be/routes"
-	"log"
-	"time"
 )
 
 func main() {
@@ -17,7 +19,7 @@ func main() {
 
 	// Cấu hình CORS để cho phép Next.js (ví dụ chạy ở http://localhost:3000) gọi API
 	config := cors.Config{}
-	config.AllowOrigins = []string{"http://localhost:3000"}
+	config.AllowOrigins = []string{"http://localhost:3000", "https://contract-template-fe.nguyenlonghai1412.workers.dev"}
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Accept", "X-Requested-With"}
 	config.ExposeHeaders = []string{"Content-Disposition", "Content-Length"} // Xóa sau khi code xong
@@ -43,7 +45,15 @@ func main() {
 	// 4. Chạy server ở cổng 8080
 	log.Println("Server đang khởi động tại cổng 8080...")
 
-	if err := router.Run(":8080"); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	// Chạy server
+	log.Printf("Server đang khởi động tại cổng %s...\n", port)
+
+	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("Không thể khởi động server: %v", err)
 	}
 }
