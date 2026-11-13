@@ -23,7 +23,7 @@ export default function SuccessDownloadModal({
         <h4 className="text-lg font-bold text-slate-900">
           Giao dịch hoàn tất!
         </h4>
-        <p className="text-xs text-slate-500">
+        <p className="text-sm text-slate-500">
           Đơn hàng{" "}
           <span className="font-semibold text-slate-700">{orderCode}</span> đã
           được xác nhận thanh toán thành công. Bạn có thể tải mẫu hợp đồng bên

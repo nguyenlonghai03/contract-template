@@ -39,32 +39,30 @@ export default async function ContractDetailPage({
   }
 
   return (
-    <div className="bg-slate-50 min-h-screen py-8">
-      <div className="max-w-7xl mx-auto px-4 space-y-8">
-        {/* BỐ CỤC 2 CỘT CHÍNH */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* CỘT TRÁI (8 Cột): Document Viewer & Thông tin bài viết */}
-          <div className="lg:col-span-8 space-y-8">
-            {/* Truyền object contract chứa preview_images vào component xem trước */}
+    <div className="bg-slate-50 min-h-screen py-5 md:py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-6 md:space-y-8">
+        {/* BỐ CỤC CHÍNH */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+          {/* CỘT TRÁI */}
+          <div className="lg:col-span-8 space-y-6 md:space-y-8">
             <ContractDocumentViewer
               contract={contract}
               baseUrl={process.env.NEXT_PUBLIC_API_BASE_URL}
             />
 
-            {/* Truyền thông tin chi tiết hợp đồng vào phần mô tả */}
             <ContractInformation contract={contract} />
-            <CustomerReviews />
           </div>
 
-          {/* CỘT PHẢI (4 Cột): Giá tiền, Nút Tải ngay & Banner tư vấn */}
-          <div className="lg:col-span-4 space-y-6 sticky top-24">
-            {/* Truyền thông tin giá, id hợp đồng vào card mua hàng */}
-            <ContractPurchaseCard contract={contract} />
-
-            {/* Banner Luật sư tư vấn */}
-            {/* <LawyerConsultBanner /> */}
+          {/* CỘT PHẢI */}
+          <div className="lg:col-span-4">
+            <div className="space-y-6 lg:sticky lg:top-24">
+              <ContractPurchaseCard contract={contract} />
+            </div>
           </div>
         </div>
+
+        {/* ĐÁNH GIÁ KHÁCH HÀNG */}
+        <CustomerReviews contractId={contract.id} />
       </div>
     </div>
   );

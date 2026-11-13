@@ -24,7 +24,11 @@ export const generateQrCode = async (
     GenerateQrResponse,
     GenerateQrResponse,
     GenerateQrRequest
-  >("/payment/generate-qr", { contract_id: contractId });
+  >(
+    "/payment/generate-qr",
+    { contract_id: contractId },
+    { withCredentials: true },
+  );
 };
 
 export const checkOrderStatus = async (orderCode: string) => {

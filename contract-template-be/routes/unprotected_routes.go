@@ -8,21 +8,27 @@ import (
 
 func SetupUnProtectedRoutes(router *gin.Engine, db *gorm.DB) {
 
-	router.GET("/categories", controllers.GetCategories(db))
-	router.GET("/contract-types", controllers.GetAllContractTypes(db))
+	api := router.Group("/api")
+	{
+		api.GET("/contract-types", controllers.GetAllContractTypes(db))
 
-	router.GET("/contracts", controllers.GetContracts(db))
-	router.GET("/contract/download", controllers.DownloadContractHandler(db))
-	router.GET("/contract/generate-preview", controllers.GeneratePreviewHandler(db))
+		api.GET("/contracts", controllers.GetContracts(db))
+		api.GET("/contract/download", controllers.DownloadContractHandler(db))
+		api.GET("/contract/generate-preview", controllers.GeneratePreviewHandler(db))
 
-	router.GET("/contracts/category/:category_id", controllers.GetContractsByCategoryID(db))
-	router.GET("/contracts/type/:type", controllers.GetContractsByType(db))
-	router.GET("/contracts/:id", controllers.GetContractByID(db))
-	// Đăng ký route Webhook trong file main.go của bạn
-	router.POST("/webhook/bank", controllers.SePayWebhookHandler(db))
-	// Ví dụ đặt trong protected_routes.go (yêu cầu đăng nhập mới gọi được API mua hàng)
-	router.POST("/payment/generate-qr", controllers.GenerateQRCodeHandler(db))
-	router.GET("/orders/status", controllers.CheckOrderStatusHandler(db))
+		api.GET("/contracts/type/:type", controllers.GetContractsByType(db))
+		api.GET("/contracts/:id", controllers.GetContractByID(db))
+		// Route lấy danh sách đánh giá theo ID hợp đồng
+		api.GET("/contracts/:id/reviews", controllers.GetReviewsHandler(db))
+
+		api.POST("/reviews", controllers.CreateReviewHandler(db))
+		// Đăng ký route Webhook trong file main.go của bạn
+		api.POST("/webhook/bank", controllers.SePayWebhookHandler(db))
+		// Ví dụ đặt trong protected_routes.go (yêu cầu đăng nhập mới gọi được API mua hàng)
+		api.POST("/payment/generate-qr", controllers.GenerateQRCodeHandler(db))
+		api.GET("/orders/status", controllers.CheckOrderStatusHandler(db))
+
+	}
 
 	// Cho phép truy cập công khai vào thư mục chứa ảnh preview
 	router.Static("/storage/previews", "./storage/previews")

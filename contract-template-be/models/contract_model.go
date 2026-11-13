@@ -11,7 +11,7 @@ type Contract struct {
 	Title          string         `json:"title"`
 	Slug           string         `json:"slug"`
 	Description    string         `json:"description"`
-	Price          float64        `json:"price"`
+	Price          int64          `json:"price"`
 	CreatedAt      time.Time      `json:"created_at"`
 	UpdatedAt      time.Time      `json:"updated_at"`
 	WordFileName   string         `json:"word_file_name"` // Thêm cột lưu tên file Word

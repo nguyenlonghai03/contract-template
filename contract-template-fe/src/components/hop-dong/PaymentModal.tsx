@@ -117,7 +117,7 @@ export default function PaymentModal({
   const handleDownload = async (fileType: "word" | "pdf") => {
     try {
       const backendUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+        process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api";
 
       const downloadUrl = `${backendUrl}/contract/download?order_code=${orderCode}&type=${fileType}`;
 
@@ -247,7 +247,7 @@ export default function PaymentModal({
                     </div>
                   </div>
 
-                  <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl p-2 text-xs text-blue-900 space-y-1">
+                  <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl p-2 text-sm text-blue-900 space-y-1">
                     <div className="font-bold text-blue-950">
                       Hướng dẫn thanh toán
                     </div>
@@ -280,7 +280,7 @@ export default function PaymentModal({
                       <span className="text-slate-500 font-medium">
                         Ngân hàng:
                       </span>
-                      <span className="font-bold text-slate-800 text-right text-xs">
+                      <span className="font-bold text-slate-800 text-right text-sm">
                         {bankConfig.bankName}
                       </span>
                     </div>
@@ -313,7 +313,7 @@ export default function PaymentModal({
                         Tên tài khoản:
                       </span>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 text-xs">
+                        <span className="font-bold text-slate-900 text-sm">
                           {bankConfig.accountName}
                         </span>
                         <button

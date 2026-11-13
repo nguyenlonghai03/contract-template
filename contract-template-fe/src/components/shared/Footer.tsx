@@ -1,61 +1,72 @@
 import Link from "next/link";
-import ScrollToTopButton from "./ScrollToTopButton";
 import Image from "next/image";
+import ScrollToTopButton from "./ScrollToTopButton";
 
 export default function Footer() {
   return (
-    <footer className="bg-white border-t border-slate-200/85 pt-8 pb-6 text-slate-700 text-sm">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 relative">
-        {/* NÚT LÊN ĐẦU TRANG */}
+    <footer className="border-t border-slate-200/85 bg-white pt-8 pb-6 text-sm text-slate-700">
+      <div className="relative mx-auto max-w-7xl px-4 md:px-6">
         <ScrollToTopButton />
 
-        {/* BỐ CỤC 4 CỘT TRẢI ĐỀU TRÊN LƯỚI 12 CỘT */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-8 items-start pb-5 border-b border-slate-100">
-          {/* CỘT 1: LOGO & MÔ TẢ (4 Cột) - Tạo độ đầm và vững chắc bên trái */}
-          <div className="lg:col-span-4 space-y-3.5 pr-2">
-            <div className="flex">
+        <div className="grid grid-cols-1 gap-8 border-b border-slate-100 pb-6 md:grid-cols-2 lg:grid-cols-12 lg:gap-8">
+          {/* LOGO & MÔ TẢ */}
+          <div className="space-y-3.5 lg:col-span-4 lg:pr-2">
+            <Link
+              href="/"
+              aria-label="Hợp Đồng Pháp Lý - Trang chủ"
+              className="mb-[1rem] inline-block"
+            >
               <Image
                 src="/images/hop-dong-phap-ly-logo (1).png"
-                alt="Hợp đồng pháp lý Logo"
+                alt="Logo Hợp Đồng Pháp Lý"
                 width={192}
-                height={60}
-                priority
-                className="object-contain"
+                height={160}
+                className="h-auto w-[192px] object-contain"
+                sizes="192px"
               />
-            </div>
-            <p className="text-slate-500 text-sm sm:text-sm leading-relaxed">
+            </Link>
+
+            <p className="leading-relaxed text-slate-500">
               Hệ thống mẫu hợp đồng pháp lý chuẩn xác, hỗ trợ tối ưu cho cá nhân
               và doanh nghiệp.
             </p>
           </div>
 
-          <div className="lg:col-span-3 space-y-3">
-            <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wider">
+          {/* LIÊN HỆ */}
+          <div className="space-y-3 lg:col-span-3">
+            <h2 className="font-bold uppercase tracking-wider text-slate-900">
               Liên hệ
-            </h4>
-            <div className="space-y-1.5 text-slate-600 text-sm">
-              <p className="text-slate-500 text-sm">Hỗ trợ giải đáp:</p>
-              <span className="font-medium text-slate-800 hover:text-emerald-600 transition break-all block">
+            </h2>
+
+            <div className="space-y-1.5 text-slate-600">
+              <p className="text-slate-500">Hỗ trợ giải đáp:</p>
+
+              <a
+                href="mailto:nguyenlonghai1412@gmail.com"
+                className="font-medium text-slate-800 transition hover:text-emerald-600 break-words"
+              >
                 nguyenlonghai1412@gmail.com
-              </span>
+              </a>
             </div>
           </div>
 
-          {/* CỘT 3: KHÁM PHÁ (2 Cột) */}
-          <div className="lg:col-span-2 space-y-3">
-            <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wider">
+          {/* KHÁM PHÁ */}
+          <div className="space-y-3 lg:col-span-2">
+            <h2 className="font-bold uppercase tracking-wider text-slate-900">
               Khám phá
-            </h4>
-            <ul className="space-y-2.5 text-slate-600 text-sm">
+            </h2>
+
+            <ul className="space-y-2.5 text-slate-600">
               <li>
-                <Link href="/" className="hover:text-emerald-600 transition">
+                <Link href="/" className="transition hover:text-emerald-600">
                   Trang chủ
                 </Link>
               </li>
+
               <li>
                 <Link
                   href="/ve-chung-toi"
-                  className="hover:text-emerald-600 transition"
+                  className="transition hover:text-emerald-600"
                 >
                   Về chúng tôi
                 </Link>
@@ -63,24 +74,26 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* CỘT 4: PHÁP LÝ (3 Cột) */}
-          <div className="lg:col-span-3 space-y-3">
-            <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wider">
+          {/* PHÁP LÝ */}
+          <div className="space-y-3 lg:col-span-3">
+            <h2 className="font-bold uppercase tracking-wider text-slate-900">
               Pháp lý
-            </h4>
-            <ul className="space-y-2.5 text-slate-600 text-sm">
+            </h2>
+
+            <ul className="space-y-2.5 text-slate-600">
               <li>
                 <Link
                   href="/chinh-sach"
-                  className="hover:text-emerald-600 transition"
+                  className="transition hover:text-emerald-600"
                 >
                   Chính sách hệ thống
                 </Link>
               </li>
+
               <li>
                 <Link
                   href="/mien-tru-trach-nhiem"
-                  className="hover:text-emerald-600 transition"
+                  className="transition hover:text-emerald-600"
                 >
                   Miễn trừ trách nhiệm
                 </Link>
@@ -89,14 +102,13 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* DÒNG BẢN QUYỀN GỌN GÀNG PHÍA DƯỚI (Không bị trùng lặp) */}
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-sm text-slate-400 gap-4">
+        {/* COPYRIGHT */}
+        <div className="flex flex-col items-center justify-between gap-3 pt-6 text-center text-slate-400 sm:flex-row sm:text-left">
           <p>
             © {new Date().getFullYear()} Hợp Đồng Pháp Lý. All rights reserved.
           </p>
-          <p className="text-slate-400">
-            Nền tảng chia sẻ biểu mẫu hợp đồng uy tín.
-          </p>
+
+          <p>Nền tảng chia sẻ biểu mẫu hợp đồng uy tín.</p>
         </div>
       </div>
     </footer>

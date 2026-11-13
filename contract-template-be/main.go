@@ -25,6 +25,7 @@ func main() {
 	config.ExposeHeaders = []string{"Content-Disposition", "Content-Length"} // Xóa sau khi code xong
 	// config.ExposeHeaders = []string{"Content-Length"}
 	config.MaxAge = 12 * time.Hour
+	config.AllowCredentials = true
 
 	router.Use(cors.New(config))
 

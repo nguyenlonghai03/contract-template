@@ -25,7 +25,7 @@ export type Contract = {
 export type ContractType = {
   id: string;
   name: string;
-  slug?: string;
+  slug: string;
 };
 
 // Định nghĩa kiểu cho response bọc (ví dụ)

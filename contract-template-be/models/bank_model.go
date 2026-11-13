@@ -1,18 +1,33 @@
 package models
 
+import "time"
+
 // Struct hứng dữ liệu SePay bắn về (Webhook Payload)
 type SePayWebhookPayload struct {
-	ID              uint    `json:"id"`
-	Gateway         string  `json:"gateway"`
-	TransactionDate string  `json:"transactionDate"`
-	AccountNumber   string  `json:"accountNumber"`
-	Content         string  `json:"content"`        // Nội dung chuyển khoản chứa mã đơn hàng
-	TransferType    string  `json:"transferType"`   // "in" là tiền vào, "out" là tiền ra
-	TransferAmount  float64 `json:"transferAmount"` // Số tiền thực tế chuyển vào
-	ReferenceCode   string  `json:"referenceCode"`
+	ID              uint   `json:"id"`
+	Gateway         string `json:"gateway"`
+	TransactionDate string `json:"transactionDate"`
+	AccountNumber   string `json:"accountNumber"`
+	Content         string `json:"content"`        // Nội dung chuyển khoản chứa mã đơn hàng
+	TransferType    string `json:"transferType"`   // "in" là tiền vào, "out" là tiền ra
+	TransferAmount  int64  `json:"transferAmount"` // Số tiền thực tế chuyển vào
+	ReferenceCode   string `json:"referenceCode"`
 }
 
 // Struct nhận request từ FE (ví dụ khách chọn mua hợp đồng ID mấy)
 type CreateOrderRequest struct {
 	ContractID uint `json:"contract_id"`
+}
+
+type SePayTransaction struct {
+	ID              uint   `gorm:"primaryKey"`
+	SePayID         uint   `gorm:"uniqueIndex;not null"`
+	OrderID         string `gorm:"index;not null"`
+	ReferenceCode   string
+	AccountNumber   string
+	TransferAmount  int64
+	Content         string
+	Gateway         string
+	TransactionDate string
+	CreatedAt       time.Time
 }

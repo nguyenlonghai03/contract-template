@@ -8,3 +8,13 @@ export const removeDiacritics = (str: string): string => {
     .replace(/Đ/g, "D") // Thêm dòng này để đổi Đ thành D
     .toLowerCase();
 };
+
+// Hàm tạo chữ cái đầu cho Avatar (Ví dụ: "Nguyễn Văn A" -> "NVA" hoặc lấy 2 chữ cái đầu)
+export const getAvatarText = (name: string) => {
+  if (!name) return "KH";
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+};

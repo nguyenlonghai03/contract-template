@@ -106,41 +106,6 @@ func GetAllContractTypes(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-// GetContractsByCategoryID xử lý lấy danh sách hợp đồng thuộc về một ngành nghề cụ thể
-func GetContractsByCategoryID(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Lấy giá trị category_id từ query string (Ví dụ: /api/v1/contracts/category?category_id=1)
-		// Hoặc bạn có thể dùng c.Param("category_id") nếu thiết kế route dạng /api/v1/categories/:category_id/contracts
-		categoryID := c.Param("category_id")
-
-		if categoryID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"success": false,
-				"message": "Thiếu tham số category_id trên đường dẫn",
-			})
-			return
-		}
-
-		var contracts []models.Contract
-
-		// Sử dụng mệnh đề Where của GORM để lọc dữ liệu: SELECT * FROM contracts WHERE category_id = ?;
-		if err := db.Where("category_id = ?", categoryID).Find(&contracts).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Lỗi khi truy vấn danh sách hợp đồng theo danh mục",
-				"error":   err.Error(),
-			})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "Lấy danh sách hợp đồng theo danh mục thành công",
-			"data":    contracts,
-		})
-	}
-}
-
 // DownloadContractHandler xử lý kiểm tra và stream file Word/PDF về cho Frontend
 func DownloadContractHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -223,22 +188,25 @@ func GeneratePreviewHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		// 1. Kiểm tra xem hợp đồng có tồn tại trong Database trước hay không
+		var contract models.Contract
+		if err := db.First(&contract, contractID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hợp đồng trong Database"})
+			return
+		}
+
 		pdfPath := filepath.Join("./storage/contract", fileName)
-		outputFolder := "./storage/previews"
-		urlPrefix := "/storage/previews"
+		// 2. Phân tách thư mục theo contractID để tránh bị gôm chung
+		// Local folder: ./storage/previews/1/ (hoặc theo UUID của hợp đồng)
+		outputFolder := filepath.Join("./storage/previews", contractID)
+
+		// URL prefix tương ứng để client có thể gọi xem ảnh
+		urlPrefix := fmt.Sprintf("/storage/previews/%s", contractID)
 
 		// 1. Gọi Service cắt PDF và tạo watermark
 		previewImages, err := services.GenerateContractPreviews(pdfPath, outputFolder, urlPrefix)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		// 2. 🗄️ GÁN VÀO DATABASE THÔNG QUA GORM
-		// Tìm hợp đồng theo ID và cập nhật cột preview_images
-		var contract models.Contract
-		if err := db.First(&contract, contractID).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hợp đồng trong Database"})
 			return
 		}
 

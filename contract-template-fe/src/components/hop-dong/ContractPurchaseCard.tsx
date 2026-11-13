@@ -112,11 +112,13 @@ export default function ContractPurchaseCard({
       </div>
 
       {/* COMPONENT MODAL POPUP THANH TOÁN */}
-      <PaymentModal
-        isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
-        contract={contract}
-      />
+      {contract && (
+        <PaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => setIsPaymentModalOpen(false)}
+          contract={contract}
+        />
+      )}
     </>
   );
 }

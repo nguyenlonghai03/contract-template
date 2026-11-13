@@ -72,7 +72,7 @@ export default function ContractDocumentViewer({
               const pageNum = index + 1;
               const fullImgUrl = imgSrc.startsWith("http")
                 ? imgSrc
-                : `${baseUrl}${imgSrc}`;
+                : `http://localhost:8080${imgSrc}`;
               const isSelected = activePage === pageNum;
 
               return (
@@ -126,7 +126,7 @@ export default function ContractDocumentViewer({
               const pageNum = index + 1;
               const fullImgUrl = imgSrc.startsWith("http")
                 ? imgSrc
-                : `${baseUrl}${imgSrc}`;
+                : `http://localhost:8080${imgSrc}`;
 
               return (
                 <div
