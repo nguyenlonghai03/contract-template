@@ -24,3 +24,11 @@ export type CreateReviewPayload = {
   rating: number;
   comment: string;
 };
+
+export type Review = NonNullable<GetReviewsResponse["data"]>[number];
+
+export type CustomerReviewsClientProps = {
+  contractId: string;
+  initialReviews: Review[];
+  initialError: boolean;
+};

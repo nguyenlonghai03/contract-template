@@ -3,6 +3,7 @@ import ContractInformation from "@/components/hop-dong/ContractInformation";
 import ContractPurchaseCard from "@/components/hop-dong/ContractPurchaseCard";
 import CustomerReviews from "@/components/hop-dong/CustomerReviews";
 import { getContractById } from "@/services/contractApi";
+import { mockContract } from "@/types/contract";
 import { notFound } from "next/navigation";
 
 type ContractDetailPageProps = {
@@ -47,10 +48,10 @@ export default async function ContractDetailPage({
           <div className="lg:col-span-8 space-y-6 md:space-y-8">
             <ContractDocumentViewer
               contract={contract}
-              baseUrl={process.env.NEXT_PUBLIC_API_BASE_URL}
+              baseUrl={"http://localhost:8080"}
             />
 
-            <ContractInformation contract={contract} />
+            <ContractInformation contract={mockContract} />
           </div>
 
           {/* CỘT PHẢI */}

@@ -18,9 +18,12 @@ const nextConfig: NextConfig = {
         protocol: "http",
         hostname: "localhost",
         port: "8080",
-        pathname: "/**",
+        pathname: "/storage/**",
       },
     ],
+
+    // Chỉ bật trong môi trường development
+    dangerouslyAllowLocalIP: process.env.NODE_ENV === "development",
   },
 };
 

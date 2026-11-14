@@ -1,248 +1,283 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { Contract } from "@/types/contract";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
+
+import type { ContractContentSection } from "@/types/contract-content";
+import type { Contract } from "@/types/contract";
+
+import ContractContentRenderer from "./ContractContentRenderer";
+import ContractTableOfContents from "./ContractTableOfContents";
 
 type ContractInformationProps = {
   contract: Contract;
 };
 
+type SectionProps = {
+  id: string;
+  title: string;
+  content?: ContractContentSection;
+  beforeContent?: React.ReactNode;
+  collapsible?: boolean;
+};
+
+function ContentSection({
+  id,
+  title,
+  content,
+  beforeContent,
+  collapsible = false,
+}: SectionProps) {
+  const [expanded, setExpanded] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  // Vị trí top của nút (so với viewport) ngay trước khi thu gọn
+  const anchorTopRef = useRef<number | null>(null);
+
+  // Chạy đồng bộ sau khi DOM đổi, TRƯỚC khi trình duyệt vẽ
+  useLayoutEffect(() => {
+    if (expanded || anchorTopRef.current === null) return;
+
+    const button = buttonRef.current;
+    if (!button) return;
+
+    const delta = button.getBoundingClientRect().top - anchorTopRef.current;
+    anchorTopRef.current = null;
+
+    if (delta === 0) return;
+
+    const root = document.documentElement;
+    root.style.overflowAnchor = "none";
+    window.scrollBy({ top: delta, behavior: "instant" }); // bỏ qua scroll-behavior: smooth của CSS
+    // Trả lại scroll anchoring ở frame sau
+    requestAnimationFrame(() => {
+      root.style.overflowAnchor = "";
+    });
+  }, [expanded]);
+
+  if (!content) return null;
+
+  const handleToggle = () => {
+    if (!expanded) {
+      setExpanded(true);
+      return;
+    }
+
+    const button = buttonRef.current;
+    if (button) {
+      anchorTopRef.current = button.getBoundingClientRect().top;
+    }
+    setExpanded(false);
+  };
+  return (
+    <section
+      id={id}
+      aria-labelledby={`${id}-title`}
+      className="scroll-mt-28 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm sm:scroll-mt-36 sm:rounded-2xl sm:p-8 lg:p-10"
+    >
+      <h2
+        id={`${id}-title`}
+        className="mb-4 border-b border-slate-100 pb-3 text-lg font-bold tracking-tight text-slate-900 sm:mb-6 sm:pb-4 sm:text-xl md:text-2xl"
+      >
+        {title}
+      </h2>
+
+      {beforeContent}
+
+      <div
+        id={`${id}-content`}
+        className={`relative ${
+          collapsible && !expanded
+            ? "max-h-[360px] overflow-hidden sm:max-h-[500px]"
+            : ""
+        }`}
+      >
+        <div
+          className="prose prose-sm prose-slate max-w-none break-words sm:prose-base
+          prose-headings:scroll-mt-28 sm:prose-headings:scroll-mt-36
+          prose-img:h-auto prose-img:max-w-full
+          prose-pre:overflow-x-auto
+          [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto"
+        >
+          <ContractContentRenderer blocks={content.blocks} sectionId={id} />
+        </div>
+
+        {collapsible && !expanded && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white via-white/90 to-transparent sm:h-32"
+          />
+        )}
+      </div>
+
+      {collapsible && (
+        <button
+          ref={buttonRef}
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={`${id}-content`}
+          onClick={handleToggle}
+          className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 sm:mt-5 sm:py-3"
+        >
+          {expanded ? "Thu gọn" : "Xem toàn bộ nội dung"}
+
+          <ChevronDown
+            size={18}
+            aria-hidden="true"
+            className={`transition-transform duration-300 ${
+              expanded ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+      )}
+    </section>
+  );
+}
+
 export default function ContractInformation({
   contract,
 }: ContractInformationProps) {
-  // Quản lý trạng thái Xem thêm / Thu gọn
-  const [isExpanded, setIsExpanded] = useState(false);
+  const introduction = contract.contents?.introduction;
+  const details = contract.contents?.details;
+  const guide = contract.contents?.guide;
+
+  const [activeSection, setActiveSection] = useState<string>("gioi-thieu");
+
+  const navItems = useMemo(
+    () =>
+      [
+        {
+          id: "gioi-thieu",
+          label: "Giới thiệu về hợp đồng",
+          shortLabel: "Giới thiệu",
+          visible: !!introduction,
+        },
+        {
+          id: "thong-tin-hop-dong",
+          label: "Thông tin hợp đồng",
+          shortLabel: "Thông tin",
+          visible: !!details,
+        },
+        {
+          id: "huong-dan",
+          label: "Hướng dẫn sử dụng",
+          shortLabel: "Hướng dẫn",
+          visible: !!guide,
+        },
+      ].filter((item) => item.visible),
+    [introduction, details, guide],
+  );
+
+  const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const nav = navRef.current;
+    const active = nav?.querySelector<HTMLElement>('[aria-current="true"]');
+    if (!nav || !active) return;
+
+    nav.scrollTo({
+      left: active.offsetLeft - (nav.clientWidth - active.offsetWidth) / 2,
+      behavior: "smooth",
+    });
+  }, [activeSection]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      {
+        rootMargin: "-25% 0px -60% 0px",
+        threshold: 0,
+      },
+    );
+
+    navItems.forEach((item) => {
+      const el = document.getElementById(item.id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [navItems]);
+
+  if (navItems.length === 0) {
+    return null;
+  }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden space-y-6">
-      {/* Sử dụng shadcn/ui Tabs */}
-      <Tabs defaultValue="overview" className="w-full">
-        {/* ================= 1. THANH TAB ĐIỀU HƯỚNG ================= */}
-        <div className="flex border-b border-slate-200/80 px-6 pt-4">
-          <TabsList className="w-full bg-transparent p-0 h-auto justify-between gap-0 rounded-none bg-none">
-            <TabsTrigger
-              value="overview"
-              className="flex-1 pb-3 text-sm md:text-base font-semibold text-center transition border-b-2 rounded-none bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none border-transparent data-[state=active]:border-emerald-600 text-slate-500 data-[state=active]:text-emerald-600 data-[state=active]:font-bold"
-            >
-              Giới thiệu
-            </TabsTrigger>
-
-            <TabsTrigger
-              value="guide"
-              className="flex-1 pb-3 text-sm md:text-base font-semibold text-center transition border-b-2 rounded-none bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none border-transparent data-[state=active]:border-emerald-600 text-slate-500 data-[state=active]:text-emerald-600 data-[state=active]:font-bold relative"
-            >
-              <span>Hướng dẫn</span>
-              {/* Dấu chấm màu xanh nhỏ góc phải Tab Hướng dẫn */}
-              <span className="absolute top-0 right-1/4 w-2 h-2 bg-emerald-500 rounded-full" />
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <div className="p-6 md:p-8 pt-0 space-y-6 text-slate-700 leading-relaxed text-sm md:text-base">
-          {/* ================= TAB 1: GIỚI THIỆU ================= */}
-          <TabsContent
-            value="overview"
-            className="space-y-6 mt-0 animate-fadeIn outline-none"
-          >
-            {/* Khối tóm tắt đầu trang */}
-            <div className="bg-slate-50/80 border border-slate-200/70 rounded-xl p-4 text-slate-700 text-sm leading-relaxed">
-              Biên bản thanh lý hợp đồng chuyển nhượng salon tóc được sử dụng để
-              xác nhận việc các bên đã hoàn tất các thỏa thuận liên quan đến
-              chuyển nhượng salon. Văn bản ghi nhận tình trạng bàn giao tài sản,
-              thanh toán và chấm dứt quyền, nghĩa vụ của các bên.
-            </div>
-
-            {/* Khối Nội dung chính có tính năng Xem thêm / Thu gọn */}
-            <div className="relative">
-              <div
-                className={`space-y-6 transition-all duration-300 overflow-hidden ${
-                  !isExpanded ? "max-h-[320px]" : "max-h-none"
-                }`}
-              >
-                {/* Mục 1: Thông tin hợp đồng */}
-                <div className="space-y-3">
-                  <h3 className="text-lg md:text-xl font-bold text-slate-900">
-                    Thông tin hợp đồng
-                  </h3>
-                  <p>
-                    Biên bản thanh lý hợp đồng chuyển nhượng salon tóc được lập
-                    khi bên chuyển nhượng và bên nhận chuyển nhượng đã hoàn
-                    thành việc bàn giao salon hoặc thống nhất kết thúc hợp đồng.
-                    Văn bản giúp xác nhận giá trị chuyển nhượng, tình trạng
-                    thanh toán, mặt bằng, nội thất, máy móc, thiết bị và các tài
-                    sản được chuyển giao kèm salon.
-                  </p>
-                  <p>
-                    Đối với salon tóc, giao dịch chuyển nhượng thường bao gồm
-                    nhiều tài sản phục vụ kinh doanh như ghế cắt tóc, giường
-                    gội, máy sấy, máy hấp tóc, gương, tủ kệ, máy tính, camera,
-                    biển hiệu và các sản phẩm chăm sóc tóc. Ngoài ra, hai bên có
-                    thể phải đối chiếu tiền thuê mặt bằng, tiền đặt cọc, hàng
-                    tồn kho và công nợ. Vì vậy, biên bản thanh lý căn ghi nhận
-                    cụ thể các nội dung đã hoàn tất để hạn chế tranh chấp sau
-                    khi bàn giao.
-                  </p>
-                </div>
-
-                {/* Mục 2: Tầm quan trọng */}
-                <div className="space-y-3">
-                  <h3 className="text-lg md:text-xl font-bold text-slate-900">
-                    Tầm quan trọng của biên bản thanh lý hợp đồng chuyển nhượng
-                    salon tóc
-                  </h3>
-                  <p>
-                    Salon tóc có thể được chuyển nhượng cùng lúc cả mặt bằng
-                    kinh doanh, trang thiết bị, nội thất, hàng hóa và các tài
-                    sản khác. Nếu chỉ xác nhận bằng lời nói rằng đã hoàn tất
-                    chuyển nhượng, các bên có thể gặp khó khăn khi xác định
-                    chính xác những gì đã được bàn giao và nghĩa vụ nào đã kết
-                    thúc.
-                  </p>
-                  <p>
-                    Biên bản thanh lý hợp đồng chuyển nhượng salon tóc giúp ghi
-                    nhận:
-                  </p>
-                  <ul className="list-disc pl-5 space-y-1 text-slate-600">
-                    <li>
-                      Thông tin của bên chuyển nhượng và bên nhận chuyển nhượng.
-                    </li>
-                    <li>
-                      Danh mục thiết bị, công cụ và tài sản bàn giao thực tế.
-                    </li>
-                    <li>
-                      Xác nhận số tiền chuyển nhượng đã thanh toán và công nợ
-                      còn lại (nếu có).
-                    </li>
-                    <li>
-                      Cam kết không khiếu nại phát sinh sau khi ký biên bản
-                      thanh lý.
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Hiệu ứng mờ đè ở dưới khi bị thu gọn */}
-              {!isExpanded && (
-                <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
-              )}
-            </div>
-          </TabsContent>
-
-          {/* ================= TAB 2: HƯỚNG DẪN ================= */}
-          <TabsContent
-            value="guide"
-            className="space-y-6 mt-0 animate-fadeIn outline-none"
-          >
-            <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 uppercase">
-              Hướng dẫn điền BIÊN BẢN THANH LÝ HỢP ĐỒNG CHUYỂN NHƯỢNG SALON TÓC
-            </h2>
-
-            <div className="text-sm space-y-1 text-slate-700">
-              <p>
-                <strong>Tên biên bản:</strong> Biên bản thanh lý hợp đồng chuyển
-                nhượng salon tóc
-              </p>
-              <p>
-                <strong>Mục đích:</strong> Xác nhận việc hoàn tất chuyển nhượng
-                salon tóc, bàn giao tài sản, đối chiếu thanh toán và xác định
-                các quyền, nghĩa vụ còn lại của các bên.
-              </p>
-            </div>
-
-            <div className="relative">
-              <div
-                className={`space-y-6 transition-all duration-300 overflow-hidden ${
-                  !isExpanded ? "max-h-[380px]" : "max-h-none"
-                }`}
-              >
-                {/* Mục 1 */}
-                <div className="space-y-2">
-                  <h3 className="text-base md:text-lg font-bold text-slate-900">
-                    1. Đối tượng áp dụng
-                  </h3>
-                  <p>
-                    Mẫu biên bản được sử dụng giữa{" "}
-                    <strong>bên chuyển nhượng salon tóc</strong> và{" "}
-                    <strong>bên nhận chuyển nhượng salon tóc</strong> sau khi
-                    các bên hoàn tất những công việc theo hợp đồng.
-                  </p>
-                  <p>
-                    Nếu có kế toán, người quản lý hoặc người được ủy quyền tham
-                    gia đối chiếu tài chính thì cần ghi rõ tư cách tham gia của
-                    người đó.
-                  </p>
-                </div>
-
-                {/* Mục 2 */}
-                <div className="space-y-2">
-                  <h3 className="text-base md:text-lg font-bold text-slate-900">
-                    2. Thông tin về hợp đồng chuyển nhượng
-                  </h3>
-                  <p>Ghi đầy đủ:</p>
-                  <ul className="list-disc pl-5 space-y-1 text-slate-600">
-                    <li>Số hợp đồng chuyển nhượng.</li>
-                    <li>Ngày ký hợp đồng.</li>
-                    <li>
-                      Họ tên/tên doanh nghiệp của bên chuyển nhượng và bên nhận
-                      chuyển nhượng.
-                    </li>
-                    <li>Địa chỉ salon tóc.</li>
-                    <li>Giá trị chuyển nhượng.</li>
-                    <li>
-                      Các tài sản, trang thiết bị và quyền lợi được chuyển giao
-                      theo hợp đồng.
-                    </li>
-                    <li>
-                      Các phụ lục hoặc thỏa thuận sửa đổi, bổ sung nếu có.
-                    </li>
-                  </ul>
-                  <p className="pt-1">
-                    Cần đối chiếu nội dung biên bản thanh lý với hợp đồng gốc để
-                    tránh bỏ sót tài sản hoặc nghĩa vụ đã thỏa thuận.
-                  </p>
-                </div>
-
-                {/* Mục 3 */}
-                <div className="space-y-2">
-                  <h3 className="text-base md:text-lg font-bold text-slate-900">
-                    3. Xác nhận việc bàn giao salon tóc
-                  </h3>
-                  <p>
-                    Đây là nội dung quan trọng của biên bản. Cần xác nhận tình
-                    trạng bàn giao thực tế, bao gồm toàn bộ danh mục tài sản và
-                    hiện trạng kinh doanh thực tế tại thời điểm bàn giao. Nghĩa
-                    vụ chưa hoàn thành cũng cần được ghi rõ bên chịu trách nhiệm
-                    và thời hạn xử lý trong biên bản để hạn chế tranh chấp về
-                    sau.
-                  </p>
-                </div>
-              </div>
-
-              {/* Hiệu ứng mờ đè ở dưới khi bị thu gọn */}
-              {!isExpanded && (
-                <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
-              )}
-            </div>
-          </TabsContent>
-        </div>
-      </Tabs>
-
-      {/* ================= NÚT BẤM XEM THÊM / THU GỌN ================= */}
-      <div className="px-6 pb-6 pt-0 border-t border-slate-100 flex justify-center">
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-emerald-600 transition bg-white px-4 py-2 rounded-full border border-slate-200/80 shadow-2xs hover:border-emerald-300 mt-4"
+    <article
+      aria-label="Thông tin chi tiết về hợp đồng"
+      className="mx-auto w-full max-w-4xl px-3 py-4 sm:px-6 sm:py-8"
+    >
+      {/* THANH MỤC LỤC NGANG STICKY */}
+      <div className="sticky top-[calc(var(--header-h)+20px)] z-30 mb-5 flex justify-center sm:top-[calc(var(--header-h)+12px)] sm:mb-8">
+        {" "}
+        <nav
+          ref={navRef}
+          aria-label="Điều hướng nội dung hợp đồng"
+          className="relative inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-slate-200/90 bg-white/90 p-1 shadow-md backdrop-blur-md [scrollbar-width:none] sm:gap-1.5 sm:p-1.5 [&::-webkit-scrollbar]:hidden"
         >
-          <span>{isExpanded ? "Thu gọn" : "Xem thêm"}</span>
-          {isExpanded ? (
-            <ChevronUp className="w-4 h-4" />
-          ) : (
-            <ChevronDown className="w-4 h-4" />
-          )}
-        </button>
+          {navItems.map((item) => {
+            const isActive = activeSection === item.id;
+
+            return (
+              <a
+                key={item.id}
+                href={`#${item.id}`}
+                aria-current={isActive ? "true" : undefined}
+                onClick={() => setActiveSection(item.id)}
+                className={`whitespace-nowrap rounded-full px-3.5 py-2 text-[13px] font-medium transition-all duration-200 sm:px-4 sm:text-sm ${
+                  isActive
+                    ? "bg-emerald-700 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                <span className="sm:hidden">{item.shortLabel}</span>
+                <span className="hidden sm:inline">{item.label}</span>
+              </a>
+            );
+          })}
+        </nav>
       </div>
-    </div>
+
+      {/* NỘI DUNG HỢP ĐỒNG */}
+      <div className="space-y-8">
+        {/* GIỚI THIỆU: LUÔN HIỂN THỊ */}
+        <ContentSection
+          id="gioi-thieu"
+          title="Giới thiệu về hợp đồng"
+          content={introduction}
+        />
+
+        {/* THÔNG TIN: CÓ THỂ THU GỌN */}
+        <ContentSection
+          id="thong-tin-hop-dong"
+          title="Thông tin hợp đồng"
+          content={details}
+          collapsible
+          beforeContent={
+            details && (
+              <div className="mb-6">
+                <ContractTableOfContents
+                  blocks={details.blocks}
+                  sectionId="thong-tin-hop-dong"
+                />
+              </div>
+            )
+          }
+        />
+
+        {/* HƯỚNG DẪN: CÓ THỂ THU GỌN */}
+        <ContentSection
+          id="huong-dan"
+          title="Hướng dẫn sử dụng hợp đồng"
+          content={guide}
+          collapsible
+        />
+      </div>
+    </article>
   );
 }

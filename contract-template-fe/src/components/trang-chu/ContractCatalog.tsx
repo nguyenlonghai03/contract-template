@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  ShieldCheck,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
 
 import type { ContractType } from "@/types/contract";
 import { getContractTypes } from "@/services/contractApi";
@@ -62,20 +67,26 @@ export default async function ContractCatalog({
     >
       <div className="bg-slate-100/80 rounded-2xl sm:rounded-3xl p-3 sm:p-4 md:p-6 shadow-xl border border-slate-200/60">
         {/* HEADER */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 sm:mb-6 border-b border-slate-200/80 px-1 sm:px-2">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 px-1 pb-4 sm:mb-6 sm:px-2">
           <h2
             id="contract-catalog-title"
-            className="text-lg sm:text-xl font-bold text-slate-800"
+            className="text-lg font-bold text-slate-800 sm:text-xl"
           >
             Kho hợp đồng pháp lý
           </h2>
 
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 text-xs sm:text-sm font-semibold">
-            <ShieldCheck className="w-4 h-4" />
-            Bảo đảm chất lượng
-          </span>
-        </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 sm:text-sm">
+              <ShieldCheck className="h-4 w-4" />
+              Bảo đảm chất lượng
+            </span>
 
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700 sm:text-sm">
+              <ShieldCheck className="h-4 w-4" />
+              Cập nhật theo quy định mới
+            </span>
+          </div>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
           {/* SIDEBAR */}
           <aside className="lg:col-span-4 min-w-0 space-y-4">
