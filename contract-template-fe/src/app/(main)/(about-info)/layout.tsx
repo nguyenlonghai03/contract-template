@@ -1,16 +1,27 @@
-import AboutSidebar from "@/components/ve-chung-toi/AboutSideBar";
+import LegalNavigation from "@/components/ve-chung-toi/LegalNavigation";
+import type { ReactNode } from "react";
 
-export default function AboutInfo({ children }: { children: React.ReactNode }) {
+interface AboutInfoLayoutProps {
+  children: ReactNode;
+}
+
+export default function AboutInfoLayout({ children }: AboutInfoLayoutProps) {
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 bg-slate-50/50 min-h-screen">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Sidebar chỉ khai báo 1 lần duy nhất cho toàn bộ nhóm trang info */}
-        <div className="lg:col-span-3">
-          <AboutSidebar />
-        </div>
+    <div className="min-h-[70vh] bg-slate-50">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-7">
+          <aside
+            className="
+              sticky top-[calc(var(--header-h)+12px)] z-30
+              min-w-0
+              lg:top-24 lg:z-auto lg:self-start
+            "
+          >
+            <LegalNavigation />
+          </aside>
 
-        {/* Nội dung thay đổi động của từng trang sẽ render ở đây */}
-        <div className="lg:col-span-9">{children}</div>
+          <main className="min-w-0">{children}</main>
+        </div>
       </div>
     </div>
   );

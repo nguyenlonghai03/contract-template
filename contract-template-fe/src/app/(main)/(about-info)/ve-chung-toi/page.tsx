@@ -1,140 +1,232 @@
-import { CheckCircle2, ShieldCheck, Award, Users } from "lucide-react";
+import type { Metadata } from "next";
+import {
+  CheckCircle2,
+  FileText,
+  ShieldCheck,
+  Search,
+  Download,
+  RefreshCw,
+} from "lucide-react";
 
-const AboutPage = () => {
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 md:p-10 space-y-6 text-slate-700 leading-relaxed">
-      {/* Tiêu đề trang */}
-      <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 pb-4 border-b border-slate-100">
-        Về chúng tôi
-      </h1>
+import LegalContent from "@/components/ve-chung-toi/LegalContent";
 
-      {/* Đoạn giới thiệu mở đầu */}
-      <div className="space-y-4 text-sm md:text-base">
-        <p>
-          Mẫu Hợp Đồng tại website{" "}
-          <span className="font-semibold text-blue-600">www.mauhopdong.vn</span>{" "}
-          là một dự án thành viên trong chuỗi dự án pháp lý – công nghệ của{" "}
-          <strong>Công ty Luật Thiên Mã</strong>, đơn vị luật sư thuộc Đoàn Luật
-          sư thành phố Hà Nội. Các luật sư và đội ngũ phát triển dự án hiểu rằng
-          người dùng hiện nay cần có một hệ thống mẫu hợp đồng chuyên nghiệp,
-          chuẩn hóa, đúng luật và được rà soát đầy đủ từ các luật sư, chuyên gia
-          pháp lý để an tâm sử dụng và ký kết. Từ đó hệ thống Mẫu Hợp Đồng được
-          hình thành để đáp ứng các nhu cầu cấp thiết ấy.
-        </p>
-
-        <p>
-          Mẫu Hợp Đồng ra đời nhằm giúp người dùng có công cụ pháp lý chuyên
-          nghiệp, đúng quy định, hạn chế tối đa rủi ro pháp lý có thể gặp phải.
-          Ngoài ra góp phần nâng cao năng lực quản trị rủi ro pháp lý cho doanh
-          nghiệp và cá nhân có nhu cầu sử dụng. Thực tế cho thấy, trên nhiều nền
-          tảng trực tuyến hiện nay, hợp đồng được đăng tải sơ sài, thiếu điều
-          khoản quan trọng, chưa đúng quy định pháp luật. Việc sử dụng những hợp
-          đồng này tiềm ẩn nhiều rủi ro và có thể gây thiệt hại nghiêm trọng khi
-          phát sinh tranh chấp hoặc xung đột lợi ích. Nhất là các hợp đồng có
-          giá trị ký kết cao hoặc dịch vụ, sản phẩm đặc thù.
-        </p>
-      </div>
-
-      {/* Danh sách các điểm mới / ưu điểm nổi bật */}
-      <div className="space-y-4 pt-4">
-        <h3 className="text-lg font-bold text-slate-900">
-          Dưới đây là các điểm mới được các luật sư và đội ngũ trú trọng phát
-          triển:
-        </h3>
-
-        <ul className="space-y-3 text-sm md:text-base">
-          <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-            <div>
-              <strong className="text-slate-900">
-                Luật sư soạn thảo và rà soát:
-              </strong>{" "}
-              Đây là điểm quan trọng, nổi bật nhất bởi tất cả các hợp đồng phát
-              hành đều được đội ngũ Luật sư kiểm duyệt và rà soát chuyên sâu qua
-              nhiều bước.
-            </div>
-          </li>
-
-          <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-            <div>
-              <strong className="text-slate-900">
-                Số lượng hợp đồng lớn nhất Việt Nam:
-              </strong>{" "}
-              Ngay trong giai đoạn phát hành đầu tiên, chúng tôi đã biên soạn và
-              cung cấp trên 10.000 hợp đồng thuộc mọi ngành nghề và lĩnh vực.
-            </div>
-          </li>
-
-          <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-            <div>
-              <strong className="text-slate-900">Đa dạng ngôn ngữ:</strong>{" "}
-              Ngoài hợp đồng tiếng Việt chuẩn, chúng tôi còn phát hành hợp đồng
-              song ngữ, hợp đồng tiếng Anh và nhiều hợp đồng bằng các ngôn ngữ
-              nước ngoài khác, phù hợp nhu cầu sử dụng tại Việt Nam.
-            </div>
-          </li>
-
-          <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-            <div>
-              <strong className="text-slate-900">Hướng dẫn chi tiết:</strong>{" "}
-              Mỗi hợp đồng đều kèm theo hướng dẫn ngắn gọn, súc tích, như những
-              tư vấn thực tiễn từ luật sư và chuyên gia pháp lý.
-            </div>
-          </li>
-
-          <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-            <div>
-              <strong className="text-slate-900">
-                Chuẩn mực về độ dài và chuyên sâu:
-              </strong>{" "}
-              Mỗi hợp đồng đều có độ dài, phần nội dung đầy đủ, có những hợp
-              đồng chuyên sâu lên đến 30 trang văn bản. Đặc biệt, chúng tôi cung
-              cấp các hợp đồng đặc thù theo từng lĩnh vực chuyên ngành – những
-              mẫu hợp đồng chất lượng cao mà chỉ có tại Mẫu Hợp Đồng.
-            </div>
-          </li>
-
-          <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-            <div>
-              <strong className="text-slate-900">Cập nhật liên tục:</strong> Hệ
-              thống thường xuyên update, bổ sung hợp đồng mới và điều chỉnh nội
-              dung phù hợp với những thay đổi của pháp luật.
-            </div>
-          </li>
-
-          <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-            <div>
-              <strong className="text-slate-900">
-                Hỗ trợ tư vấn và soạn thảo:
-              </strong>{" "}
-              Trong mỗi hợp đồng mẫu khi người dùng cần sự hỗ trợ của Luật sư để
-              hiệu đính, điều chỉnh sao cho phù hợp đều được hệ thống hỗ trợ và
-              kết nối nhanh.
-            </div>
-          </li>
-        </ul>
-      </div>
-
-      {/* Đoạn kết luận / Lời ngỏ */}
-      <div className="pt-4 border-t border-slate-100 text-sm md:text-base">
-        <p>
-          Chúng tôi hiểu rằng việc biên soạn, ban hành và tái bản với số lượng
-          lớn không thể tránh khỏi những hạn chế về học thuật, chuyên môn hoặc
-          yếu tố khách quan khác. Là đơn vị sự xây dựng và phát triển hệ thống
-          chúng tôi trân trọng ghi nhận mọi góp ý, phản hồi từ quý độc giả,
-          người dùng và các nhà nghiên cứu. Sự đóng góp của các bạn là nền tảng
-          để chúng tôi tiếp tục hoàn thiện, mang đến những sản phẩm pháp lý chất
-          lượng và chuyên nghiệp nhất./.
-        </p>
-      </div>
-    </div>
-  );
+export const metadata: Metadata = {
+  title: "Về chúng tôi | Hợp Đồng Pháp Lý",
+  description:
+    "Hợp Đồng Pháp Lý cung cấp các mẫu hợp đồng, biểu mẫu pháp lý bằng Word và PDF, hỗ trợ cá nhân và doanh nghiệp tìm kiếm, tham khảo và sử dụng tài liệu thuận tiện.",
+  alternates: {
+    canonical: "https://hopdongphaply.vn/ve-chung-toi",
+  },
+  openGraph: {
+    title: "Về chúng tôi | Hợp Đồng Pháp Lý",
+    description:
+      "Tìm hiểu về Hợp Đồng Pháp Lý – nền tảng cung cấp mẫu hợp đồng và biểu mẫu pháp lý dành cho cá nhân, doanh nghiệp.",
+    url: "https://hopdongphaply.vn/ve-chung-toi",
+    siteName: "Hợp Đồng Pháp Lý",
+    locale: "vi_VN",
+    type: "website",
+  },
 };
 
-export default AboutPage;
+const advantages = [
+  {
+    icon: Search,
+    title: "Dễ dàng tìm kiếm mẫu hợp đồng",
+    description:
+      "Hệ thống tài liệu được phân loại theo chủ đề và lĩnh vực, giúp người dùng thuận tiện tìm kiếm mẫu hợp đồng phù hợp với nhu cầu sử dụng.",
+  },
+  {
+    icon: FileText,
+    title: "Đa dạng biểu mẫu pháp lý",
+    description:
+      "Cung cấp các mẫu hợp đồng và biểu mẫu thuộc nhiều lĩnh vực khác nhau, phục vụ nhu cầu tham khảo và sử dụng của cá nhân, hộ kinh doanh và doanh nghiệp.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Chú trọng nội dung và tính ứng dụng",
+    description:
+      "Nội dung tài liệu được xây dựng theo hướng rõ ràng, có cấu trúc và chú trọng các điều khoản cần thiết, giúp người dùng thuận tiện tham khảo và điều chỉnh theo từng giao dịch.",
+  },
+  {
+    icon: Download,
+    title: "Tải tài liệu thuận tiện",
+    description:
+      "Hỗ trợ tải tài liệu dưới định dạng Word và PDF, giúp người dùng dễ dàng lưu trữ, tham khảo và chỉnh sửa nội dung khi cần thiết.",
+  },
+  {
+    icon: RefreshCw,
+    title: "Không ngừng cập nhật",
+    description:
+      "Các danh mục tài liệu được định hướng bổ sung và hoàn thiện thường xuyên nhằm đáp ứng nhu cầu sử dụng ngày càng đa dạng.",
+  },
+];
+
+export default function AboutPage() {
+  return (
+    <LegalContent>
+      <article className="space-y-10 text-slate-700">
+        {/* Introduction */}
+        <header className="border-b border-slate-100 pb-6">
+          <h1 className="text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">
+            Về chúng tôi
+          </h1>
+
+          <p className="mt-4 text-sm leading-7 sm:text-base">
+            Hợp Đồng Pháp Lý là nền tảng cung cấp mẫu hợp đồng và biểu mẫu pháp
+            lý, được xây dựng nhằm giúp cá nhân và doanh nghiệp tiếp cận các tài
+            liệu cần thiết một cách thuận tiện, tiết kiệm thời gian và dễ dàng
+            sử dụng.
+          </p>
+        </header>
+
+        {/* Mission */}
+        <section aria-labelledby="mission-heading" className="space-y-4">
+          <h2 id="mission-heading" className="text-xl font-bold text-slate-900">
+            Sứ mệnh của Hợp Đồng Pháp Lý
+          </h2>
+
+          <p className="text-sm leading-7 sm:text-base">
+            Trong hoạt động kinh doanh và các giao dịch dân sự, hợp đồng đóng
+            vai trò quan trọng trong việc xác lập quyền, nghĩa vụ và trách nhiệm
+            giữa các bên. Tuy nhiên, không phải cá nhân hay doanh nghiệp nào
+            cũng có sẵn kiến thức và thời gian để tự xây dựng một văn bản hợp
+            đồng phù hợp.
+          </p>
+
+          <p className="text-sm leading-7 sm:text-base">
+            Việc tìm kiếm tài liệu trên Internet cũng có thể gặp khó khăn khi
+            nội dung phân tán, thiếu hệ thống hoặc chưa đáp ứng đúng mục đích sử
+            dụng. Điều này khiến người dùng mất nhiều thời gian trong việc tìm
+            kiếm, tham khảo và hoàn thiện văn bản.
+          </p>
+
+          <p className="text-sm leading-7 sm:text-base">
+            Xuất phát từ nhu cầu đó, Hợp Đồng Pháp Lý hướng đến việc xây dựng
+            một thư viện biểu mẫu hợp đồng có tổ chức, dễ tiếp cận và thuận tiện
+            sử dụng. Chúng tôi mong muốn trở thành nguồn tham khảo hữu ích, hỗ
+            trợ người dùng chủ động hơn trong quá trình chuẩn bị các văn bản
+            pháp lý cho công việc và cuộc sống.
+          </p>
+        </section>
+
+        {/* Advantages */}
+        <section aria-labelledby="advantages-heading" className="space-y-6">
+          <div>
+            <h2
+              id="advantages-heading"
+              className="text-xl font-bold text-slate-900"
+            >
+              Giá trị chúng tôi hướng đến
+            </h2>
+
+            <p className="mt-2 text-sm leading-7 sm:text-base">
+              Hợp Đồng Pháp Lý tập trung phát triển trải nghiệm tra cứu và sử
+              dụng tài liệu thông qua những giá trị thiết thực:
+            </p>
+          </div>
+
+          <ul className="space-y-6">
+            {advantages.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <li key={item.title} className="flex items-start gap-4">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
+                    <Icon
+                      className="size-5 text-emerald-700"
+                      aria-hidden="true"
+                    />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold leading-6 text-slate-900">
+                      {item.title}
+                    </h3>
+
+                    <p className="mt-1 text-sm leading-7 sm:text-base">
+                      {item.description}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+
+        {/* Vision */}
+        <section
+          aria-labelledby="vision-heading"
+          className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5 sm:p-6"
+        >
+          <h2 id="vision-heading" className="text-xl font-bold text-slate-900">
+            Định hướng phát triển
+          </h2>
+
+          <p className="mt-3 text-sm leading-7 sm:text-base">
+            Chúng tôi hướng đến việc phát triển Hợp Đồng Pháp Lý thành một nền
+            tảng tài liệu pháp lý trực tuyến hữu ích, nơi người dùng có thể tìm
+            kiếm, tham khảo và tiếp cận các biểu mẫu hợp đồng phù hợp với nhu
+            cầu thực tế.
+          </p>
+
+          <p className="mt-3 text-sm leading-7 sm:text-base">
+            Trong quá trình phát triển, chúng tôi sẽ tiếp tục hoàn thiện hệ
+            thống tài liệu, cải thiện trải nghiệm sử dụng và nâng cao chất lượng
+            nội dung để mang lại nhiều giá trị hơn cho cộng đồng.
+          </p>
+        </section>
+
+        {/* Disclaimer */}
+        <section
+          aria-labelledby="disclaimer-heading"
+          className="space-y-3 border-t border-slate-100 pt-7"
+        >
+          <h2
+            id="disclaimer-heading"
+            className="text-lg font-bold text-slate-900"
+          >
+            Lưu ý khi sử dụng tài liệu
+          </h2>
+
+          <p className="text-sm leading-7 sm:text-base">
+            Các mẫu hợp đồng trên website có mục đích hỗ trợ tham khảo và chuẩn
+            bị văn bản. Người sử dụng cần chủ động kiểm tra, bổ sung thông tin
+            và điều chỉnh các điều khoản để phù hợp với tính chất giao dịch,
+            thỏa thuận giữa các bên và quy định pháp luật hiện hành.
+          </p>
+
+          <p className="text-sm leading-7 sm:text-base">
+            Đối với những giao dịch có tính chất phức tạp hoặc giá trị lớn,
+            người dùng nên tham khảo ý kiến của luật sư hoặc chuyên gia pháp lý
+            trước khi ký kết.
+          </p>
+        </section>
+
+        {/* Commitment */}
+        <section
+          aria-labelledby="commitment-heading"
+          className="space-y-3 border-t border-slate-100 pt-7"
+        >
+          <h2
+            id="commitment-heading"
+            className="text-lg font-bold text-slate-900"
+          >
+            Cam kết của chúng tôi
+          </h2>
+
+          <p className="text-sm leading-7 sm:text-base">
+            Hợp Đồng Pháp Lý luôn hướng đến sự minh bạch trong việc cung cấp
+            thông tin, rõ ràng trong quá trình sử dụng dịch vụ và không ngừng
+            cải thiện chất lượng tài liệu.
+          </p>
+
+          <p className="text-sm leading-7 sm:text-base">
+            Mọi ý kiến đóng góp và phản hồi từ người dùng đều là cơ sở quan
+            trọng để chúng tôi hoàn thiện nền tảng và phục vụ tốt hơn những nhu
+            cầu thực tế.
+          </p>
+        </section>
+      </article>
+    </LegalContent>
+  );
+}

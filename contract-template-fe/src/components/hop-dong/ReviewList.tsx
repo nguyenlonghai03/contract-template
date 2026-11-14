@@ -47,17 +47,9 @@ export default function ReviewList({
       ) : reviews.length === 0 ? (
         /* EMPTY STATE */
 
-        <div className="py-5 text-center space-y-2">
-          <MessageSquare
-            className="w-8 h-8 mx-auto text-slate-300"
-            aria-hidden="true"
-          />
-
-          <p className="text-sm text-slate-500">
-            Chưa có đánh giá nào cho hợp đồng này. Hãy là người đầu tiên đánh
-            giá!
-          </p>
-        </div>
+        <p className="text-sm text-slate-500 italic py-2">
+          Chưa có đánh giá nào cho hợp đồng này. Hãy là người đầu tiên đánh giá!
+        </p>
       ) : (
         <>
           {/* REVIEW ITEMS */}
