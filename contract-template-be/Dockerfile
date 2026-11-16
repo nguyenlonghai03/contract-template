@@ -17,6 +17,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 FROM alpine:latest
 WORKDIR /app
 
+# poppler-utils cung cấp lệnh pdftoppm, cần cho tính năng tạo preview PDF
+RUN apk add --no-cache poppler-utils
+
 # Copy file binary từ bản build ở trên
 COPY --from=builder /app/main .
 

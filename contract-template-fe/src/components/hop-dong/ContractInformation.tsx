@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
-import type { ContractContentSection } from "@/types/contract-content";
+import type { ContractContentSection } from "@/types/contractContent";
 import type { Contract } from "@/types/contract";
 
 import ContractContentRenderer from "./ContractContentRenderer";

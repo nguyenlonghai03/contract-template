@@ -1,4 +1,4 @@
-import type { ContentBlock } from "@/types/contract-content";
+import type { ContentBlock } from "@/types/contractContent";
 
 type ContractContentRendererProps = {
   blocks: ContentBlock[];

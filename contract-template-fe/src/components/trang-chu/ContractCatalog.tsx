@@ -6,10 +6,16 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import type { ContractType } from "@/types/contract";
-import { getContractTypes } from "@/services/contractApi";
+import type { ContractResponse, ContractType } from "@/types/contract";
+import {
+  getContracts,
+  getContractsByContractType,
+  getContractTypes,
+} from "@/services/contractApi";
 import { removeDiacritics } from "@/lib/stringUtils";
 import ContractList from "./ContractList";
+
+const PAGE_SIZE = 6;
 
 interface ContractCatalogProps {
   searchQuery?: string;
@@ -26,24 +32,45 @@ export default async function ContractCatalog({
   currentPage = 1,
   basePath = "/",
 }: ContractCatalogProps) {
-  let contractTypes: ContractType[] = [];
-  let hasError = false;
+  const trimmedQuery = searchQuery.trim();
 
-  try {
-    const data = await getContractTypes();
-    contractTypes = Array.isArray(data) ? data : [];
-  } catch (error) {
-    hasError = true;
-    console.error("Failed to fetch contract types:", error);
-  }
-
-  // 2. Tìm loại hợp đồng tương ứng với slug trên URL
-  const selectedContractType = contractTypes.find(
-    (item) => item.slug === selectedType,
+  // 1. Danh mục: không bao giờ reject (null = lỗi) để dùng chung cho cả 2 nhánh.
+  const typesPromise: Promise<ContractType[] | null> = getContractTypes().then(
+    (data) => (Array.isArray(data) ? data : []),
+    (error) => {
+      console.error("Failed to fetch contract types:", error);
+      return null;
+    },
   );
 
-  // 3. Lấy ID để gọi API backend
-  const selectedId = selectedContractType?.id ?? null;
+  // 2. Danh sách hợp đồng: chỉ khi lọc theo danh mục mới cần chờ danh mục để
+  // đổi slug -> id; các trường hợp còn lại gọi SONG SONG với API danh mục
+  // (trước đây luôn chạy nối tiếp, tốn thêm 1 round-trip).
+  const listPromise: Promise<ContractResponse> = trimmedQuery
+    ? getContracts(currentPage, PAGE_SIZE, trimmedQuery)
+    : selectedType
+      ? typesPromise.then((types) => {
+          const selected = types?.find((item) => item.slug === selectedType);
+
+          return selected
+            ? getContractsByContractType(selected.id, currentPage, PAGE_SIZE)
+            : getContracts(currentPage, PAGE_SIZE);
+        })
+      : getContracts(currentPage, PAGE_SIZE);
+
+  const [typesData, listResult] = await Promise.all([
+    typesPromise,
+    listPromise.then(
+      (data) => ({ data, error: false }) as const,
+      (error) => {
+        console.error("Failed to fetch contracts:", error);
+        return { data: null, error: true } as const;
+      },
+    ),
+  ]);
+
+  const hasError = typesData === null;
+  const contractTypes = typesData ?? [];
 
   // Chuẩn hóa từ khóa tìm kiếm danh mục
   const normalizedQuery = removeDiacritics(categoryQuery.trim()).toLowerCase();
@@ -172,8 +199,9 @@ export default async function ContractCatalog({
           {/* CONTRACT LIST */}
           <div className="lg:col-span-8 min-w-0">
             <ContractList
+              contractData={listResult.data}
+              hasError={listResult.error}
               searchQuery={searchQuery}
-              selectedId={selectedId}
               selectedType={selectedType}
               currentPage={currentPage}
               basePath={basePath}

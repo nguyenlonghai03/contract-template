@@ -75,43 +75,6 @@ func GenerateContractPreviews(pdfPath string, outputDir string, publicURLPrefix 
 	return previewImagePaths, nil
 }
 
-// // Hàm nội bộ xử lý đồ họa: Vẽ lớp che nửa trang phải và thanh banner xanh lá
-// func applyWatermarkToImage(inputImagePath string, outputImagePath string) error {
-// 	// 1. Load ảnh gốc do pdftoppm cắt ra
-// 	img, err := gg.LoadImage(inputImagePath)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	bounds := img.Bounds()
-// 	width := bounds.Dx()
-// 	height := bounds.Dy()
-
-// 	dc := gg.NewContext(width, height)
-// 	dc.DrawImage(img, 0, 0)
-
-// 	// 2. TÍNH TOÁN VÙNG CHE MỜ (Chỉ che ~30% ở nửa bên phải)
-// 	// Độ rộng của vùng mờ bên phải = 30% tổng chiều rộng trang
-// 	blurWidth := float64(width) * 0.30
-// 	blurX := float64(width) - blurWidth - 100 // Trừ đi một chút để chừa chỗ cho dải banner xanh bên ngoài cùng
-
-// 	// 3. VẼ LỚP MỜ TRẮNG (Màu trắng đục nhẹ thay vì đen tối)
-// 	dc.SetRGBA255(255, 255, 255, 210) // Màu trắng với độ trong suốt vừa phải (210/255)
-// 	dc.DrawRectangle(blurX, 0, blurWidth, float64(height))
-// 	dc.Fill()
-
-// 	// 4. VẼ DẢI BANNER XANH LÁ Ở CẠNH PHẢI CÙNG
-// 	bannerWidth := 100
-// 	bannerX := width - bannerWidth
-
-// 	dc.SetHexColor("#00875A") // Màu xanh lá đặc trưng
-// 	dc.DrawRectangle(float64(bannerX), 0, float64(bannerWidth), float64(height))
-// 	dc.Fill()
-
-// 	// 5. Lưu lại file ảnh preview hoàn thiện
-// 	return dc.SavePNG(outputImagePath)
-// }
-
 func ApplyBlurRightSideEffect(inputImagePath string, outputImagePath string) error {
 	// 1. Đọc ảnh gốc bằng thư viện imaging
 	src, err := imaging.Open(inputImagePath)

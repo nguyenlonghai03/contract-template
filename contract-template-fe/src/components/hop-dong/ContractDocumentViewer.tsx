@@ -1,42 +1,20 @@
+import { resolveBackendUrl } from "@/lib/config";
 import type { Contract } from "@/types/contract";
 import DocumentPages from "./DocumentPages";
 import DocumentViewerControls from "./DocumentViewerControls";
 
 type ContractDocumentViewerProps = {
   contract: Contract;
-  baseUrl?: string;
 };
-
-function resolveImageUrl(src: string, baseUrl = ""): string {
-  const trimmedSrc = src.trim();
-
-  // URL đầy đủ từ Cloudflare R2 / CDN
-  if (/^https?:\/\//i.test(trimmedSrc)) {
-    return trimmedSrc;
-  }
-
-  // Protocol-relative URL
-  if (trimmedSrc.startsWith("//")) {
-    return `https:${trimmedSrc}`;
-  }
-
-  // Đường dẫn tương đối từ Backend
-  if (baseUrl) {
-    return `${baseUrl.replace(/\/+$/, "")}/${trimmedSrc.replace(/^\/+/, "")}`;
-  }
-
-  return trimmedSrc;
-}
 
 export default function ContractDocumentViewer({
   contract,
-  baseUrl = "",
 }: ContractDocumentViewerProps) {
   const images = (contract?.preview_images ?? [])
     .filter(
       (src): src is string => typeof src === "string" && src.trim().length > 0,
     )
-    .map((src) => resolveImageUrl(src, baseUrl));
+    .map(resolveBackendUrl);
 
   if (images.length === 0) {
     return (

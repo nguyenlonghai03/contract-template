@@ -1,0 +1,7 @@
+.env
+.env.*
+tmp/
+storage/
+*.exe
+*.md
+.git/

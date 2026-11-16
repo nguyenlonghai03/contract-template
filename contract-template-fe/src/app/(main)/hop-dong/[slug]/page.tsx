@@ -1,10 +1,49 @@
+import { cache, Suspense } from "react";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+
 import ContractDocumentViewer from "@/components/hop-dong/ContractDocumentViewer";
 import ContractInformation from "@/components/hop-dong/ContractInformation";
 import ContractPurchaseCard from "@/components/hop-dong/ContractPurchaseCard";
-import CustomerReviews from "@/components/hop-dong/CustomerReviews";
+import CustomerReviews, {
+  CustomerReviewsSkeleton,
+  loadContractReviews,
+} from "@/components/hop-dong/CustomerReviews";
+import { resolveBackendUrl, SITE_URL } from "@/lib/config";
+import { ApiError } from "@/services/apiFetch";
 import { getContractById } from "@/services/contractApi";
-import { mockContract } from "@/types/contract";
-import { notFound } from "next/navigation";
+import { mockContract, type Contract } from "@/types/contract";
+
+// ISR: trang được render lần đầu khi có người truy cập rồi cache lại, sau đó
+// revalidate nền. Nhờ là route static, <Link> ở trang danh sách prefetch được
+// TOÀN BỘ trang chi tiết nên bấm vào là hiển thị ngay, không chờ server.
+export const revalidate = 300;
+
+// Mảng rỗng = không prerender lúc build (không phụ thuộc backend khi build),
+// mọi slug được render theo yêu cầu ở lần truy cập đầu rồi cache (ISR).
+export async function generateStaticParams() {
+  return [];
+}
+
+// Tách lấy ID ở cuối slug (ví dụ "mau-hop-dong-thue-nha-tro-60" -> "60").
+// Chỉ chấp nhận số nguyên dương để không gọi backend với slug rác.
+function getIdFromSlug(slug: string): string | undefined {
+  const id = slug?.split("-").pop();
+  return id && /^[1-9]\d*$/.test(id) ? id : undefined;
+}
+
+// cache() khử trùng lặp: generateMetadata và Page dùng chung 1 lần gọi API.
+// Trả null khi backend báo 404; lỗi khác (mạng, 5xx) được ném ra để error.tsx
+// xử lý — tránh cache nhầm trang 404 khi backend chỉ lỗi tạm thời.
+const getContract = cache(async (id: string): Promise<Contract | null> => {
+  try {
+    const response = await getContractById(id);
+    return response?.data ?? null;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+});
 
 type ContractDetailPageProps = {
   params: Promise<{
@@ -12,32 +51,56 @@ type ContractDetailPageProps = {
   }>;
 };
 
+export async function generateMetadata({
+  params,
+}: ContractDetailPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const id = getIdFromSlug(slug);
+
+  if (!id) return {};
+
+  try {
+    const contract = await getContract(id);
+    if (!contract) return {};
+
+    const url = `${SITE_URL}/hop-dong/${slug}`;
+    const description = contract.description?.slice(0, 160);
+    const previewImage = contract.preview_images?.[0];
+    const imageUrl = previewImage ? resolveBackendUrl(previewImage) : undefined;
+
+    return {
+      title: contract.title,
+      description,
+      alternates: { canonical: url },
+      openGraph: {
+        title: contract.title,
+        description,
+        url,
+        type: "website",
+        ...(imageUrl ? { images: [imageUrl] } : {}),
+      },
+    };
+  } catch (error) {
+    console.error("Lỗi khi tạo metadata hợp đồng:", error);
+    return {};
+  }
+}
+
 export default async function ContractDetailPage({
   params,
 }: ContractDetailPageProps) {
-  // 1. Lấy slug từ params (Next.js 15)
   const { slug } = await params;
+  const id = getIdFromSlug(slug);
 
-  // 2. Tách lấy ID ở cuối chuỗi slug (ví dụ "mau-hop-dong-thue-nha-tro-60" -> "60")
-  const id = slug ? slug.split("-").pop() : undefined;
+  if (!id) notFound();
 
-  if (!id) {
-    notFound();
-  }
+  // Gọi đánh giá SONG SONG với chi tiết hợp đồng (trước đây chạy nối tiếp,
+  // tốn thêm 1 round-trip tới backend). Promise này không bao giờ reject.
+  const reviewsPromise = loadContractReviews(Number(id));
 
-  // 3. Gọi API lấy thông tin chi tiết hợp đồng trực tiếp tại Server
-  let contract = null;
-  try {
-    const response = await getContractById(id);
-    contract = response?.data || response;
-  } catch (error) {
-    console.error("Lỗi khi tải chi tiết hợp đồng:", error);
-    notFound(); // Trả về trang 404 nếu không tìm thấy ID hợp đồng
-  }
+  const contract = await getContract(id);
 
-  if (!contract) {
-    notFound();
-  }
+  if (!contract) notFound();
 
   return (
     <div className="bg-slate-50 min-h-screen py-5 md:py-8">
@@ -46,10 +109,7 @@ export default async function ContractDetailPage({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           {/* CỘT TRÁI */}
           <div className="lg:col-span-8 space-y-6 md:space-y-8">
-            <ContractDocumentViewer
-              contract={contract}
-              baseUrl={"http://localhost:8080"}
-            />
+            <ContractDocumentViewer contract={contract} />
 
             <ContractInformation contract={mockContract} />
           </div>
@@ -62,8 +122,13 @@ export default async function ContractDetailPage({
           </div>
         </div>
 
-        {/* ĐÁNH GIÁ KHÁCH HÀNG */}
-        <CustomerReviews contractId={contract.id} />
+        {/* ĐÁNH GIÁ KHÁCH HÀNG — stream riêng, không chặn phần nội dung chính */}
+        <Suspense fallback={<CustomerReviewsSkeleton />}>
+          <CustomerReviews
+            contractId={String(contract.id)}
+            reviewsPromise={reviewsPromise}
+          />
+        </Suspense>
       </div>
     </div>
   );

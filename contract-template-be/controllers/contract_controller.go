@@ -12,102 +12,165 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	storage "github.com/nguyenlonghai03/contract-template/contract-template-be/internal/storage"
 )
+
+const downloadPresignExpiry = 5 * time.Minute
+
+const (
+	maxPageLimit = 200
+
+	// Thời gian (giây) trình duyệt/CDN được cache response công khai.
+	listMaxAge   = 30
+	detailMaxAge = 60
+	typesMaxAge  = 300
+)
+
+// Chỉ các cột cần cho trang danh sách — không kéo description, file gốc,
+// object key… về từ DB. (Không có category_id: cột này không tồn tại trong
+// bảng contracts, field CategoryID của model luôn là 0.)
+var contractListColumns = []string{
+	"id", "title", "slug", "price", "created_at", "updated_at",
+	"contract_type_id", "views", "downloads",
+	"original_price", "rating",
+}
+
+// Cột cho trang chi tiết: thêm description + thông tin ảnh preview.
+var contractDetailColumns = append(
+	append([]string{}, contractListColumns...),
+	"description", "preview_images", "preview_object_keys",
+)
+
+// parsePagination đọc page/limit từ query, luôn trả giá trị hợp lệ.
+func parsePagination(c *gin.Context, defaultLimit int) (page, limit int) {
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	limit, err = strconv.Atoi(c.DefaultQuery("limit", strconv.Itoa(defaultLimit)))
+	if err != nil || limit < 1 {
+		limit = defaultLimit
+	}
+
+	if limit > maxPageLimit {
+		limit = maxPageLimit
+	}
+
+	return page, limit
+}
+
+type contractPageRow struct {
+	models.Contract
+	TotalCount int64 `gorm:"column:total_count"`
+}
+
+// queryContractPage lấy 1 trang hợp đồng KÈM tổng số bản ghi trong CÙNG một
+// câu truy vấn (COUNT(*) OVER()), thay vì Count + Find = 2 round-trip tới DB.
+func queryContractPage(query *gorm.DB, page, limit int) (gin.H, error) {
+	var rows []contractPageRow
+
+	selectCols := make([]string, 0, len(contractListColumns)+1)
+	for _, col := range contractListColumns {
+		selectCols = append(selectCols, "contracts."+col)
+	}
+	selectCols = append(selectCols, "COUNT(*) OVER() AS total_count")
+
+	if err := query.Session(&gorm.Session{}).
+		Select(selectCols).
+		Limit(limit).
+		Offset((page - 1) * limit).
+		Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	var total int64
+
+	if len(rows) > 0 {
+		total = rows[0].TotalCount
+	} else if page > 1 {
+		// Trang vượt quá dữ liệu: không có dòng nào nên phải đếm riêng.
+		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
+			return nil, err
+		}
+	}
+
+	contracts := make([]models.PublicContract, 0, len(rows))
+	for _, row := range rows {
+		contracts = append(contracts, row.Contract.ToPublic(nil))
+	}
+
+	return gin.H{
+		"success":    true,
+		"data":       contracts,
+		"total":      total,
+		"page":       page,
+		"limit":      limit,
+		"totalPages": int(math.Ceil(float64(total) / float64(limit))),
+	}, nil
+}
 
 func GetContracts(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 1. Lấy tham số phân trang và từ khóa từ query string
-		pageStr := c.DefaultQuery("page", "1")
-		limitStr := c.DefaultQuery("limit", "7")
-		keyword := c.Query("keyword") // Có thể rỗng hoặc có giá trị
+		page, limit := parsePagination(c, 7)
+		keyword := strings.TrimSpace(c.Query("keyword"))
 
-		page, err := strconv.Atoi(pageStr)
-		if err != nil || page < 1 {
-			page = 1
-		}
+		key := fmt.Sprintf("%sall:%d:%d:%s", cacheKeyListPrefix, page, limit, strings.ToLower(keyword))
 
-		limit, err := strconv.Atoi(limitStr)
-		if err != nil || limit < 1 {
-			limit = 7
-		}
+		serveCachedJSON(c, key, listMaxAge, "Lỗi khi truy vấn danh sách hợp đồng", func() (any, error) {
+			// Chỉ hiển thị hợp đồng đã Published
+			query := db.Model(&models.Contract{}).Where("status = ?", models.ContractStatusPublished)
 
-		offset := (page - 1) * limit
+			// Full-Text Search của PostgreSQL (không dấu) nếu có keyword
+			if keyword != "" {
+				query = query.Where(
+					"to_tsvector('simple', unaccent(title)) @@ plainto_tsquery('simple', unaccent(?))",
+					keyword,
+				)
+			}
 
-		var contracts []models.Contract
-		var total int64
+			result, err := queryContractPage(query, page, limit)
+			if err != nil {
+				return nil, err
+			}
 
-		// Khởi tạo query base của GORM
-		query := db.Model(&models.Contract{})
+			result["message"] = "Lấy danh sách hợp đồng thành công"
 
-		// 2. Kiểm tra nếu có keyword thì áp dụng Full-Text Search thông minh của PostgreSQL
-		if keyword != "" {
-			searchQueryCondition := "to_tsvector('simple', unaccent(title)) @@ plainto_tsquery('simple', unaccent(?))"
-			query = query.Where(searchQueryCondition, keyword)
-		}
-
-		// 3. Đếm tổng số lượng bản ghi (đã tự động tính theo điều kiện lọc nếu có keyword)
-		if err := query.Count(&total).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Lỗi khi đếm tổng số hợp đồng",
-				"error":   err.Error(),
-			})
-			return
-		}
-
-		// 4. Truy vấn dữ liệu có phân trang (Limit, Offset) kèm điều kiện tìm kiếm (nếu có)
-		if err := query.Limit(limit).Offset(offset).Find(&contracts).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Lỗi khi truy vấn danh sách hợp đồng",
-				"error":   err.Error(),
-			})
-			return
-		}
-
-		// 5. Tính tổng số trang
-		totalPages := int(math.Ceil(float64(total) / float64(limit)))
-
-		// 6. Trả về kết quả JSON chuẩn cấu trúc phân trang cho Frontend
-		c.JSON(http.StatusOK, gin.H{
-			"success":    true,
-			"message":    "Lấy danh sách hợp đồng thành công",
-			"data":       contracts,
-			"total":      total,
-			"page":       page,
-			"limit":      limit,
-			"totalPages": totalPages,
+			return result, nil
 		})
 	}
 }
 
 func GetAllContractTypes(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Dùng trực tiếp models.ContractType
-		var contractTypes []models.ContractType
+		serveCachedJSON(c, cacheKeyContractTypes, typesMaxAge, "Lỗi khi truy vấn danh sách loại hợp đồng", func() (any, error) {
+			contractTypes := []models.ContractType{}
 
-		if err := db.Find(&contractTypes).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Lỗi khi truy vấn danh sách loại hợp đồng",
-				"error":   err.Error(),
-			})
-			return
-		}
+			if err := db.Order("id ASC").Find(&contractTypes).Error; err != nil {
+				return nil, err
+			}
 
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "Lấy danh sách loại hợp đồng thành công",
-			"data":    contractTypes,
+			return gin.H{
+				"success": true,
+				"message": "Lấy danh sách loại hợp đồng thành công",
+				"data":    contractTypes,
+			}, nil
 		})
 	}
 }
 
-// DownloadContractHandler xử lý kiểm tra và stream file Word/PDF về cho Frontend
-func DownloadContractHandler(db *gorm.DB) gin.HandlerFunc {
+// DownloadContractHandler xử lý kiểm tra và trả file Word/PDF về cho Frontend.
+// Hợp đồng tạo qua Admin (có object_key trên R2) sẽ được redirect sang một
+// presigned URL ngắn hạn để khách tải TRỰC TIẾP từ R2, không proxy qua server
+// này. Hợp đồng cũ (chỉ có file trên local disk) vẫn dùng luồng stream cũ.
+func DownloadContractHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		orderCode := c.Query("order_code")
 		fileType := c.DefaultQuery("type", "pdf") // Mặc định là pdf nếu không truyền type
@@ -140,18 +203,56 @@ func DownloadContractHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// 3. Xác định tên file dựa theo lựa chọn của khách
-		var fileName string
+		// 3. Xác định tên file + object key (nếu có) dựa theo lựa chọn của khách
+		var fileName, objectKey, contentType string
+
 		if fileType == "word" {
 			fileName = contract.WordFileName
+			objectKey = contract.DocxObjectKey
+			contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 		} else {
 			fileName = contract.PdfFileName
+			objectKey = contract.PdfObjectKey
+			contentType = "application/pdf"
 		}
 
-		// Đường dẫn tới thư mục lưu trữ cục bộ
+		extension := filepath.Ext(objectKey)
+		if extension == "" {
+			if fileType == "word" {
+				extension = ".docx"
+			} else {
+				extension = ".pdf"
+			}
+		}
+
+		// 3b. Hợp đồng tạo qua Admin — file gốc chỉ nằm trên R2, redirect sang
+		// presigned URL để tải trực tiếp từ R2, không đi qua server này.
+		if objectKey != "" {
+			downloadName := fmt.Sprintf("Hop-dong-%s%s", contract.Title, extension)
+			disposition := fmt.Sprintf(`attachment; filename="%s"`, downloadName)
+
+			presignedURL, err := storage.PresignGetURL(
+				c.Request.Context(), r2Client, r2Bucket(), objectKey,
+				downloadPresignExpiry, disposition,
+			)
+
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"success": false,
+					"message": "Không thể tạo link tải file",
+					"error":   err.Error(),
+				})
+				return
+			}
+
+			c.Redirect(http.StatusFound, presignedURL)
+			return
+		}
+
+		// 4. Hợp đồng cũ — file gốc nằm trên local disk (giữ nguyên logic cũ)
 		filePath := filepath.Join("./storage/contract", fileName)
 
-		// 4. Kiểm tra file vật lý có thực sự tồn tại không
+		// Kiểm tra file vật lý có thực sự tồn tại không
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			c.JSON(http.StatusNotFound, gin.H{
 				"success": false,
@@ -163,12 +264,7 @@ func DownloadContractHandler(db *gorm.DB) gin.HandlerFunc {
 		// 5. Cấu hình Header linh hoạt cho từng loại file (Rất quan trọng cho PDF)
 		c.Header("Content-Description", "File Transfer")
 		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", fileName))
-
-		if fileType == "word" {
-			c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-		} else {
-			c.Header("Content-Type", "application/pdf") // 🟢 Ép đúng Header Content-Type cho PDF
-		}
+		c.Header("Content-Type", contentType)
 
 		// 6. Stream dữ liệu nhị phân của file trực tiếp về cho client
 		c.File(filePath)
@@ -219,6 +315,8 @@ func GeneratePreviewHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		InvalidateContractCaches(contract.ID)
+
 		// 3. Trả về kết quả thành công
 		c.JSON(http.StatusOK, gin.H{
 			"message":        "Đã tạo preview và cập nhật DB thành công!",
@@ -232,29 +330,43 @@ func GeneratePreviewHandler(db *gorm.DB) gin.HandlerFunc {
 func GetContractByID(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Lấy param category_id từ URL (ví dụ: /api/contracts/1)
-		id := c.Param("id")
+		const notFoundMessage = "Không tìm thấy mẫu hợp đồng này"
 
-		var contract models.Contract
-
-		// Truy vấn vào PostgreSQL tìm hợp đồng theo ID
-		if err := db.First(&contract, id).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				c.JSON(http.StatusNotFound, gin.H{
-					"error": "Không tìm thấy mẫu hợp đồng này",
-				})
-				return
-			}
-			// Lỗi hệ thống Database khác
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Lỗi truy vấn cơ sở dữ liệu: " + err.Error(),
-			})
+		id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+		if err != nil || id == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": notFoundMessage})
 			return
 		}
 
-		// Trả về thông tin hợp đồng kèm danh sách link ảnh preview trên R2
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"data":    contract,
+		key := fmt.Sprintf("%s%d", cacheKeyDetailPrefix, id)
+
+		serveCachedJSON(c, key, detailMaxAge, "Lỗi truy vấn cơ sở dữ liệu", func() (any, error) {
+			var contract models.Contract
+
+			// Chỉ hợp đồng đã Published
+			err := db.Select(contractDetailColumns).
+				Where("status = ?", models.ContractStatusPublished).
+				First(&contract, id).Error
+
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, notFoundError(notFoundMessage)
+			}
+
+			if err != nil {
+				return nil, err
+			}
+
+			// Hợp đồng tạo qua Admin chỉ có preview trên R2 (preview_object_keys),
+			// chưa có preview_images cũ (local disk) — tự tính URL proxy.
+			previewImages := []string(contract.PreviewImages)
+			if len(previewImages) == 0 && len(contract.PreviewObjectKeys) > 0 {
+				previewImages = previewURLsFor(contract.ID, contract.PreviewObjectKeys)
+			}
+
+			return gin.H{
+				"success": true,
+				"data":    contract.ToPublic(previewImages),
+			}, nil
 		})
 	}
 }
@@ -263,44 +375,38 @@ func GetContractByID(db *gorm.DB) gin.HandlerFunc {
 func GetContractsByType(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Lấy contract_type từ URL Param (Ví dụ: /api/v1/contracts/type/mua-ban)
-		contractType := c.Param("type")
+		// Phân trang (trước đây page/limit không hợp lệ có thể sinh OFFSET âm)
+		page, limit := parsePagination(c, 6)
 
-		// Hoặc hỗ trợ phân trang cơ bản nếu danh sách nhiều
-		pageStr := c.DefaultQuery("page", "1")
-		limitStr := c.DefaultQuery("limit", "6")
-
-		page, _ := strconv.Atoi(pageStr)
-		limit, _ := strconv.Atoi(limitStr)
-		offset := (page - 1) * limit
-
-		var contracts []models.Contract
-		var total int64
-
-		query := db.Model(&models.Contract{}).Where("contract_type_id = ?", contractType)
-
-		// Đếm tổng số lượng
-		query.Count(&total)
-
-		// Truy vấn dữ liệu phân trang
-		if err := query.Limit(limit).Offset(offset).Find(&contracts).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Lỗi khi lấy danh sách hợp đồng theo loại",
-				"error":   err.Error(),
+		typeID, err := strconv.ParseUint(c.Param("type"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success":    true,
+				"message":    "Lấy danh sách hợp đồng theo loại thành công",
+				"data":       []models.PublicContract{},
+				"total":      0,
+				"page":       page,
+				"limit":      limit,
+				"totalPages": 0,
 			})
 			return
 		}
 
-		totalPages := int(math.Ceil(float64(total) / float64(limit)))
+		key := fmt.Sprintf("%stype:%d:%d:%d", cacheKeyListPrefix, typeID, page, limit)
 
-		c.JSON(http.StatusOK, gin.H{
-			"success":    true,
-			"message":    "Lấy danh sách hợp đồng theo loại thành công",
-			"data":       contracts,
-			"total":      total,
-			"page":       page,
-			"limit":      limit,
-			"totalPages": totalPages,
+		serveCachedJSON(c, key, listMaxAge, "Lỗi khi lấy danh sách hợp đồng theo loại", func() (any, error) {
+			query := db.Model(&models.Contract{}).
+				Where("status = ?", models.ContractStatusPublished).
+				Where("contract_type_id = ?", typeID)
+
+			result, err := queryContractPage(query, page, limit)
+			if err != nil {
+				return nil, err
+			}
+
+			result["message"] = "Lấy danh sách hợp đồng theo loại thành công"
+
+			return result, nil
 		})
 	}
 }

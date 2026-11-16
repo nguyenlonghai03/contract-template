@@ -8,7 +8,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-import LegalContent from "@/components/ve-chung-toi/LegalContent";
+import LegalContent from "@/components/legal/LegalContent";
 
 export const metadata: Metadata = {
   title: "Miễn trừ trách nhiệm | Hợp Đồng Pháp Lý",

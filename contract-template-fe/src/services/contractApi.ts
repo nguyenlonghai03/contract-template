@@ -4,14 +4,21 @@ import {
   ContractType,
   ContractTypeResponse,
 } from "@/types/contract";
-import { axiosClient } from "./axiosClient";
-import axios from "axios";
+import { API_BASE_URL, REVALIDATE } from "@/lib/config";
+import { apiGet } from "./apiFetch";
+
+// Tag dùng cho revalidateTag khi cần làm mới dữ liệu theo yêu cầu.
+export const CONTRACT_TAGS = {
+  types: "contract-types",
+  list: "contracts",
+  detail: (id: string | number) => `contract-${id}`,
+} as const;
 
 export const getContractTypes = async (): Promise<ContractType[]> => {
-  // Thay vì any, hãy định nghĩa kiểu dữ liệu cụ thể cho contract types nếu có (ví dụ: ContractType[])
-  const response = await axiosClient.get<unknown, ContractTypeResponse>(
-    "/contract-types",
-  );
+  const response = await apiGet<ContractTypeResponse>("/contract-types", {
+    revalidate: REVALIDATE.contractTypes,
+    tags: [CONTRACT_TAGS.types],
+  });
   return response.data;
 };
 
@@ -20,24 +27,21 @@ export async function getContracts(
   limit: number = 5,
   searchQuery: string = "",
 ): Promise<ContractResponse> {
-  // Dùng trực tiếp ContractResponse cho kiểu dữ liệu trả về của axios
-  const res = await axiosClient.get<unknown, ContractResponse>("/contracts", {
-    params: {
-      page,
-      limit,
-      keyword: searchQuery,
-    },
+  return apiGet<ContractResponse>("/contracts", {
+    params: { page, limit, keyword: searchQuery },
+    revalidate: REVALIDATE.contractList,
+    tags: [CONTRACT_TAGS.list],
   });
-
-  return res;
 }
 
 export const getContractById = async (id: string | number) => {
-  const res = await axiosClient.get<
-    unknown,
-    { data: Contract; success: boolean }
-  >(`/contracts/${id}`);
-  return res;
+  return apiGet<{ data: Contract; success: boolean }>(
+    `/contracts/${encodeURIComponent(String(id))}`,
+    {
+      revalidate: REVALIDATE.contractDetail,
+      tags: [CONTRACT_TAGS.list, CONTRACT_TAGS.detail(id)],
+    },
+  );
 };
 
 export const getContractsByContractType = async (
@@ -45,56 +49,40 @@ export const getContractsByContractType = async (
   page: number = 1,
   limit: number = 6,
 ): Promise<ContractResponse> => {
-  const res = await axiosClient.get<unknown, ContractResponse>(
-    `/contracts/type/${typeId}`,
+  return apiGet<ContractResponse>(
+    `/contracts/type/${encodeURIComponent(String(typeId))}`,
     {
       params: { page, limit },
+      revalidate: REVALIDATE.contractList,
+      tags: [CONTRACT_TAGS.list],
     },
   );
-  return res;
 };
 
 type FileType = "word" | "pdf";
 
+// Điều hướng trực tiếp tới endpoint download (không fetch blob qua JS).
+// Lý do: với hợp đồng tạo qua Admin, backend trả 302 redirect sang R2 — nếu
+// fetch bằng axios/XHR, trình duyệt sẽ chặn đọc response vì R2 không cấu hình
+// CORS cho origin của FE. Điều hướng <a> thì trình duyệt tự theo redirect và
+// lưu file theo header Content-Disposition mà backend đã set (ở cả 2 nhánh
+// R2 và local disk), không cần biết tên file ở phía client.
 export async function downloadContract(
   orderCode: string,
   contract: Contract,
   fileType: FileType,
 ) {
-  const backendUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api";
+  void contract; // tên file đã do backend quyết định qua Content-Disposition
 
   const downloadUrl =
-    `${backendUrl}/contract/download` +
+    `${API_BASE_URL}/contract/download` +
     `?order_code=${encodeURIComponent(orderCode)}` +
     `&type=${fileType}`;
 
-  const response = await axios.get(downloadUrl, {
-    responseType: "blob",
-  });
-
-  const isWord = fileType === "word";
-
-  const mimeType = isWord
-    ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    : "application/pdf";
-
-  const extension = isWord ? "docx" : "pdf";
-
-  const blob = new Blob([response.data], { type: mimeType });
-  const blobUrl = window.URL.createObjectURL(blob);
-
   const link = document.createElement("a");
-
-  link.href = blobUrl;
-  link.download = `Hop-dong-${contract.title}.${extension}`;
+  link.href = downloadUrl;
 
   document.body.appendChild(link);
   link.click();
   link.remove();
-
-  // Chờ trình duyệt xử lý download trước khi giải phóng URL
-  setTimeout(() => {
-    window.URL.revokeObjectURL(blobUrl);
-  }, 1000);
 }

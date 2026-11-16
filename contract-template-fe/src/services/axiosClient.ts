@@ -1,11 +1,27 @@
 // src/lib/axiosClient.ts
 import axios from "axios";
+import { API_BASE_URL } from "@/lib/config";
 
 export const axiosClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api",
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
+});
+
+// Request Interceptor: gắn header admin key nếu có trong localStorage
+// (dùng cho các API /admin/*, no-op với các API public).
+axiosClient.interceptors.request.use((config) => {
+  const adminKey =
+    typeof window !== "undefined"
+      ? localStorage.getItem("admin_api_key")
+      : null;
+
+  if (adminKey) {
+    config.headers["X-Admin-Api-Key"] = adminKey;
+  }
+
+  return config;
 });
 
 // Response Interceptor để tự động trả về response.data luôn,

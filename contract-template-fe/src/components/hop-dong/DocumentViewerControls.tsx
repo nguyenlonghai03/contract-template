@@ -326,6 +326,9 @@ export default function DocumentViewerControls({
                       src={image}
                       alt={`Thumbnail ${title} - Trang ${pageNum}`}
                       fill
+                      unoptimized
+                      loading="lazy"
+                      decoding="async"
                       sizes="(max-width: 640px) 64px, (max-width: 768px) 80px, 100px"
                       className="object-contain"
                     />

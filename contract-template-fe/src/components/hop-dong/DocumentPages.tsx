@@ -36,7 +36,13 @@ export default function DocumentPages({ title, images }: DocumentPagesProps) {
                 src={image}
                 alt={`${title} - Trang ${pageNum}`}
                 fill
-                priority={pageNum === 1}
+                // Ảnh preview là PNG backend sinh sẵn: tải thẳng (không qua image
+                // optimizer) để thumbnail và trang chính dùng chung 1 file trong
+                // cache trình duyệt, và không tốn thêm 1 hop qua Worker.
+                unoptimized
+                loading={pageNum === 1 ? "eager" : "lazy"}
+                fetchPriority={pageNum === 1 ? "high" : "auto"}
+                decoding="async"
                 sizes="(max-width: 768px) 90vw, (max-width: 1200px) 65vw, 760px"
                 className="object-contain"
               />

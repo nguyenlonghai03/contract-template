@@ -1,14 +1,12 @@
-import { connection } from "next/server";
-
 import { getContractReviews } from "@/services/reviewService";
-import type { GetReviewsResponse } from "@/types/review";
+import type { Review } from "@/types/review";
+import { Skeleton } from "@/components/ui/skeleton";
 import CustomerReviewsClient from "./CustomerReviewsClient";
 
-type CustomerReviewsProps = {
-  contractId: string;
+type ReviewsResult = {
+  reviews: Review[];
+  error: boolean;
 };
-
-type Review = NonNullable<GetReviewsResponse["data"]>[number];
 
 // Che số điện thoại ngay tại server trước khi gửi xuống client
 function maskPhoneNumber(phone: string): string {
@@ -17,41 +15,62 @@ function maskPhoneNumber(phone: string): string {
   return `${phone.slice(0, 3)}****${phone.slice(-3)}`;
 }
 
-export default async function CustomerReviews({
-  contractId,
-}: CustomerReviewsProps) {
-  // Đảm bảo dữ liệu được lấy khi có request thực tế,
-  // không bị cố định tại thời điểm build.
-  await connection();
+// Tải đánh giá của 1 hợp đồng. Không bao giờ reject để có thể khởi chạy sớm
+// (song song với API chi tiết hợp đồng) mà không sinh unhandled rejection.
+export async function loadContractReviews(
+  contractId: number,
+): Promise<ReviewsResult> {
+  if (!Number.isSafeInteger(contractId) || contractId <= 0) {
+    return { reviews: [], error: false };
+  }
 
-  const numericContractId = Number(contractId);
+  try {
+    const response = await getContractReviews(contractId);
 
-  const isValidContractId =
-    Number.isSafeInteger(numericContractId) && numericContractId > 0;
-
-  let initialReviews: Review[] = [];
-  let initialError = false;
-
-  if (isValidContractId) {
-    try {
-      const response = await getContractReviews(numericContractId);
-
-      // Chỉ truyền thông tin đã được che số điện thoại xuống client
-      initialReviews = (response?.data ?? []).map((review) => ({
+    // Chỉ truyền thông tin đã được che số điện thoại xuống client
+    return {
+      reviews: (response?.data ?? []).map((review) => ({
         ...review,
         phone: maskPhoneNumber(review.phone),
-      }));
-    } catch (error) {
-      console.error("Failed to fetch customer reviews:", error);
-      initialError = true;
-    }
+      })),
+      error: false,
+    };
+  } catch (error) {
+    console.error("Failed to fetch customer reviews:", error);
+    return { reviews: [], error: true };
   }
+}
+
+type CustomerReviewsProps = {
+  contractId: string;
+  reviewsPromise: Promise<ReviewsResult>;
+};
+
+export default async function CustomerReviews({
+  contractId,
+  reviewsPromise,
+}: CustomerReviewsProps) {
+  const { reviews, error } = await reviewsPromise;
 
   return (
     <CustomerReviewsClient
       contractId={contractId}
-      initialReviews={initialReviews}
-      initialError={initialError}
+      initialReviews={reviews}
+      initialError={error}
     />
+  );
+}
+
+export function CustomerReviewsSkeleton() {
+  return (
+    <section
+      aria-busy="true"
+      aria-label="Đang tải đánh giá"
+      className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 sm:p-6 md:p-8 space-y-4"
+    >
+      <Skeleton className="h-6 w-56" />
+      <Skeleton className="h-16 w-full" />
+      <Skeleton className="h-16 w-full" />
+    </section>
   );
 }

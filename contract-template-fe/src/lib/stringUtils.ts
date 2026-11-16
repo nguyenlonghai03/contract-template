@@ -9,6 +9,13 @@ export const removeDiacritics = (str: string): string => {
     .toLowerCase();
 };
 
+// Hàm tạo slug từ tiêu đề (Ví dụ: "Hợp đồng Thuê Nhà" -> "hop-dong-thue-nha")
+export const slugify = (str: string): string => {
+  return removeDiacritics(str)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+};
+
 // Hàm tạo chữ cái đầu cho Avatar (Ví dụ: "Nguyễn Văn A" -> "NVA" hoặc lấy 2 chữ cái đầu)
 export const getAvatarText = (name: string) => {
   if (!name) return "KH";

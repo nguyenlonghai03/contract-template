@@ -1,4 +1,4 @@
-import { ContractContents } from "./contract-content";
+import { ContractContents } from "./contractContent";
 
 // ================= 1. HỢP ĐỒNG (CONTRACT) =================
 export type Contract = {

@@ -1,4 +1,4 @@
-import LegalNavigation from "@/components/ve-chung-toi/LegalNavigation";
+import LegalNavigation from "@/components/legal/LegalNavigation";
 import type { ReactNode } from "react";
 
 interface AboutInfoLayoutProps {

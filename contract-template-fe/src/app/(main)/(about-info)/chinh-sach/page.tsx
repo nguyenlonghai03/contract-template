@@ -9,20 +9,20 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import LegalContent from "@/components/ve-chung-toi/LegalContent";
+import LegalContent from "@/components/legal/LegalContent";
 
 export const metadata: Metadata = {
   title: "Chính sách hệ thống | Hợp Đồng Pháp Lý",
   description:
     "Tìm hiểu chính sách bảo mật thông tin, thanh toán, sử dụng tài liệu, hỗ trợ khách hàng và quyền sở hữu trí tuệ tại Hợp Đồng Pháp Lý.",
   alternates: {
-    canonical: "https://hopdongphaply.vn/chinh-sach-he-thong",
+    canonical: "https://hopdongphaply.vn/chinh-sach",
   },
   openGraph: {
     title: "Chính sách hệ thống | Hợp Đồng Pháp Lý",
     description:
       "Các chính sách và quy định khi sử dụng dịch vụ, mua và tải mẫu hợp đồng tại Hợp Đồng Pháp Lý.",
-    url: "https://hopdongphaply.vn/chinh-sach-he-thong",
+    url: "https://hopdongphaply.vn/chinh-sach",
     siteName: "Hợp Đồng Pháp Lý",
     locale: "vi_VN",
     type: "website",

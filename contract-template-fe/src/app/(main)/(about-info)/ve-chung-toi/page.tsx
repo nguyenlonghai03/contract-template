@@ -8,7 +8,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import LegalContent from "@/components/ve-chung-toi/LegalContent";
+import LegalContent from "@/components/legal/LegalContent";
 
 export const metadata: Metadata = {
   title: "Về chúng tôi | Hợp Đồng Pháp Lý",

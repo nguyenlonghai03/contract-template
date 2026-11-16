@@ -1,18 +1,23 @@
 import { CreateReviewPayload, GetReviewsResponse } from "@/types/review";
+import { REVALIDATE } from "@/lib/config";
+import { apiGet } from "./apiFetch";
 import { axiosClient } from "./axiosClient";
 
-// 4. Object chứa các hàm API service
-// Hàm lấy danh sách đánh giá
+export const reviewsTag = (contractId: number | string) =>
+  `reviews-${contractId}`;
+
+// Lấy danh sách đánh giá đã duyệt (gọi từ Server Component, có cache).
+// Đánh giá mới phải chờ duyệt nên trễ tối đa REVALIDATE.reviews giây là chấp nhận được.
 export const getContractReviews = async (
   contractId: number,
 ): Promise<GetReviewsResponse> => {
-  const response = (await axiosClient.get(
-    `/contracts/${contractId}/reviews`,
-  )) as GetReviewsResponse;
-  return response;
+  return apiGet<GetReviewsResponse>(`/contracts/${contractId}/reviews`, {
+    revalidate: REVALIDATE.reviews,
+    tags: [reviewsTag(contractId)],
+  });
 };
 
-// Hàm gửi đánh giá mới
+// Gửi đánh giá mới
 export const createReview = async (
   payload: CreateReviewPayload,
 ): Promise<void> => {

@@ -17,10 +17,12 @@ export default function Footer() {
               className="mb-[1rem] inline-block"
             >
               <Image
-                src="/images/hop-dong-phap-ly-logo (1).png"
+                src="/images/hop-dong-phap-ly-logo-384.webp"
                 alt="Logo Hợp Đồng Pháp Lý"
                 width={192}
                 height={160}
+                // Ảnh đã resize sẵn (384px, ~11KB) thay cho ảnh gốc 480KB
+                unoptimized
                 className="h-auto w-[192px] object-contain"
                 sizes="192px"
               />

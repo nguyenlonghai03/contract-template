@@ -44,9 +44,9 @@ export default function RootLayout({
       className={cn("h-full antialiased", "font-sans", geist.variable)}
       suppressHydrationWarning
     >
-      <ReactQueryProvider>
-        <body className="min-h-full flex flex-col font-sans">{children}</body>
-      </ReactQueryProvider>
+      <body className="min-h-full flex flex-col font-sans">
+        <ReactQueryProvider>{children}</ReactQueryProvider>
+      </body>
     </html>
   );
 }

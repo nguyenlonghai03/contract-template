@@ -9,10 +9,6 @@ import {
 } from "../ui/pagination";
 
 import type { ContractResponse } from "@/types/contract";
-import {
-  getContracts,
-  getContractsByContractType,
-} from "@/services/contractApi";
 
 import {
   AlertCircle,
@@ -24,46 +20,23 @@ import {
 } from "lucide-react";
 
 type ContractListProps = {
+  // Dữ liệu được ContractCatalog tải sẵn (song song với API danh mục)
+  contractData: ContractResponse | null;
+  hasError?: boolean;
   searchQuery?: string;
-  selectedId?: string | number | null;
   currentPage?: number;
   selectedType?: string;
   basePath?: string;
 };
 
-const PAGE_SIZE = 6;
-
-export default async function ContractList({
+export default function ContractList({
+  contractData,
+  hasError = false,
   searchQuery = "",
-  selectedId = null,
   currentPage = 1,
   selectedType = "",
   basePath = "/",
 }: ContractListProps) {
-  let contractData: ContractResponse | null = null;
-  let hasError = false;
-
-  try {
-    if (searchQuery.trim()) {
-      contractData = await getContracts(
-        currentPage,
-        PAGE_SIZE,
-        searchQuery.trim(),
-      );
-    } else if (selectedId !== null && selectedId !== undefined) {
-      contractData = await getContractsByContractType(
-        selectedId,
-        currentPage,
-        PAGE_SIZE,
-      );
-    } else {
-      contractData = await getContracts(currentPage, PAGE_SIZE);
-    }
-  } catch (error) {
-    hasError = true;
-    console.error("Failed to fetch contracts:", error);
-  }
-
   const contracts = contractData?.data ?? [];
   const totalPages = contractData?.totalPages ?? 0;
 

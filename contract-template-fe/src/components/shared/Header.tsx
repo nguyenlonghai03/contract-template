@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Mail } from "lucide-react";
 import NavLink from "./NavLink";
-import MobileMenu from "./MobieMenu";
+import MobileMenu from "./MobileMenu";
 
 export default function Header() {
   return (
@@ -17,11 +17,13 @@ export default function Header() {
             className="flex items-center shrink-0"
           >
             <Image
-              src="/images/logo-hop-dong-phap-ly.png"
+              src="/images/logo-hop-dong-phap-ly-128.webp"
               alt="Logo Hợp đồng pháp lý"
               width={64}
               height={64}
-              priority
+              // Ảnh đã resize sẵn (128px, ~2KB) thay cho PNG gốc 1.1MB
+              unoptimized
+              preload
               className="rounded-full object-cover w-12 h-12 sm:w-16 sm:h-16"
             />
 
