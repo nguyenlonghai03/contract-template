@@ -1,0 +1,11 @@
+# File bị loại khi `gcloud run deploy --source .` upload mã nguồn lên Cloud Build.
+# Quan trọng: KHÔNG upload .env (chứa mật khẩu DB, key R2...) lên Cloud Storage.
+.gcloudignore
+.git/
+.env
+.env.*
+tmp/
+storage/
+*.exe
+*.md
+deploy/

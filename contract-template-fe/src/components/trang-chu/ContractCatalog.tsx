@@ -1,17 +1,8 @@
 import Link from "next/link";
-import {
-  CheckCircle2,
-  ShieldCheck,
-  AlertCircle,
-  RefreshCw,
-} from "lucide-react";
+import { CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
 
 import type { ContractResponse, ContractType } from "@/types/contract";
-import {
-  getContracts,
-  getContractsByContractType,
-  getContractTypes,
-} from "@/services/contractApi";
+import { getContracts, getContractsByContractType, getContractTypes } from "@/services/contractApi";
 import { removeDiacritics } from "@/lib/stringUtils";
 import ContractList from "./ContractList";
 
@@ -95,10 +86,7 @@ export default async function ContractCatalog({
       <div className="bg-slate-100/80 rounded-2xl sm:rounded-3xl p-3 sm:p-4 md:p-6 shadow-xl border border-slate-200/60">
         {/* HEADER */}
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 px-1 pb-4 sm:mb-6 sm:px-2">
-          <h2
-            id="contract-catalog-title"
-            className="text-lg font-bold text-slate-800 sm:text-xl"
-          >
+          <h2 id="contract-catalog-title" className="text-lg font-bold text-slate-800 sm:text-xl">
             Kho hợp đồng pháp lý
           </h2>
 
@@ -119,15 +107,10 @@ export default async function ContractCatalog({
           <aside className="lg:col-span-4 min-w-0 space-y-4">
             {/* CATEGORY */}
             <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-200/80 space-y-4">
-              <h3 className="font-bold text-slate-800 text-sm sm:text-base">
-                Danh mục hợp đồng
-              </h3>
+              <h3 className="font-bold text-slate-800 text-sm sm:text-base">Danh mục hợp đồng</h3>
 
               {hasError ? (
-                <div
-                  role="status"
-                  className="flex items-center gap-2 text-sm text-amber-700 py-4"
-                >
+                <div role="status" className="flex items-center gap-2 text-sm text-amber-700 py-4">
                   <AlertCircle className="w-4 h-4" />
                   Không thể tải danh mục hợp đồng.
                 </div>
@@ -151,13 +134,9 @@ export default async function ContractCatalog({
                               : "text-slate-600 hover:bg-slate-50 hover:text-blue-600"
                           }`}
                         >
-                          <span className="shrink-0 mt-0.5">
-                            {isSelected ? "●" : "•"}
-                          </span>
+                          <span className="shrink-0 mt-0.5">{isSelected ? "●" : "•"}</span>
 
-                          <span className="min-w-0 break-words">
-                            {item.name}
-                          </span>
+                          <span className="min-w-0 break-words">{item.name}</span>
                         </Link>
                       </li>
                     );

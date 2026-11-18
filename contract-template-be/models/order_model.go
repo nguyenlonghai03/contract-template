@@ -15,6 +15,12 @@ type Order struct {
 	CreatedAt  time.Time `json:"created_at"`                      // Thời gian tạo đơn
 }
 
+const (
+	OrderStatusPending = "Pending"
+	OrderStatusSuccess = "Success"
+	OrderStatusExpired = "Expired"
+)
+
 // Hàm này ép GORM phải insert chính xác vào bảng có tên là "orders"
 func (Order) TableName() string {
 	return "orders"

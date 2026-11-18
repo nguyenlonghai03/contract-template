@@ -3,10 +3,12 @@ package routes
 import (
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-gonic/gin"
 	"github.com/nguyenlonghai03/contract-template/contract-template-be/controllers"
+	"github.com/nguyenlonghai03/contract-template/contract-template-be/middleware"
 	"gorm.io/gorm"
 )
 
@@ -43,20 +45,20 @@ func registerContractRoutes(api *gin.RouterGroup, db *gorm.DB, r2Client *s3.Clie
 	contracts.GET("/:id", controllers.GetContractByID(db))
 	contracts.GET("/:id/reviews", controllers.GetReviewsHandler(db))
 
-	// Contract download and preview
-	api.GET("/contract/download", controllers.DownloadContractHandler(db, r2Client))
-	api.GET("/contract/generate-preview", controllers.GeneratePreviewHandler(db))
+	// Contract download (preview được sinh qua API admin)
+	api.GET("/contract/download", middleware.RateLimit(30, time.Minute), controllers.DownloadContractHandler(db, r2Client))
 }
 
 // Review APIs
 func registerReviewRoutes(api *gin.RouterGroup, db *gorm.DB) {
-	api.POST("/reviews", controllers.CreateReviewHandler(db))
+	api.POST("/reviews", middleware.RateLimit(5, time.Minute), controllers.CreateReviewHandler(db))
 }
 
 // Payment APIs
 func registerPaymentRoutes(api *gin.RouterGroup, db *gorm.DB) {
-	api.POST("/payment/generate-qr", controllers.GenerateQRCodeHandler(db))
-	api.GET("/orders/status", controllers.CheckOrderStatusHandler(db))
+	api.POST("/payment/generate-qr", middleware.RateLimit(20, time.Minute), controllers.GenerateQRCodeHandler(db))
+	// Polling 3s/lần ≈ 20 req/phút cho mỗi modal đang mở
+	api.GET("/orders/status", middleware.RateLimit(90, time.Minute), controllers.CheckOrderStatusHandler(db))
 }
 
 // Bank webhook APIs

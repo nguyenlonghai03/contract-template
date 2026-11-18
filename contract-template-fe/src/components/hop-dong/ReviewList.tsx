@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Star, ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
+import { Star, ChevronDown, ChevronUp } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { getAvatarText } from "@/lib/stringUtils";
@@ -11,11 +11,7 @@ type ReviewListProps = {
   onRetry: () => void;
 };
 
-export default function ReviewList({
-  reviews,
-  initialError,
-  onRetry,
-}: ReviewListProps) {
+export default function ReviewList({ reviews, initialError, onRetry }: ReviewListProps) {
   const [visibleCount, setVisibleCount] = useState(3);
 
   const displayedReviews = reviews.slice(0, visibleCount);
@@ -25,10 +21,7 @@ export default function ReviewList({
     <div className="space-y-4">
       {/* HEADER */}
 
-      <h2
-        id="customer-reviews-heading"
-        className="text-base sm:text-lg font-bold text-slate-900"
-      >
+      <h2 id="customer-reviews-heading" className="text-base sm:text-lg font-bold text-slate-900">
         Đánh giá từ khách hàng ({reviews.length})
       </h2>
 
@@ -36,9 +29,7 @@ export default function ReviewList({
 
       {initialError ? (
         <div className="py-5 text-center space-y-3" role="alert">
-          <p className="text-sm text-red-500">
-            Không thể tải danh sách đánh giá.
-          </p>
+          <p className="text-sm text-red-500">Không thể tải danh sách đánh giá.</p>
 
           <Button type="button" variant="outline" size="sm" onClick={onRetry}>
             Thử lại
@@ -75,21 +66,13 @@ export default function ReviewList({
                             {item.author_name}
                           </span>
 
-                          <span
-                            className="text-slate-300 hidden sm:inline"
-                            aria-hidden="true"
-                          >
+                          <span className="text-slate-300 hidden sm:inline" aria-hidden="true">
                             |
                           </span>
 
-                          <span className="font-medium text-slate-600">
-                            {item.phone}
-                          </span>
+                          <span className="font-medium text-slate-600">{item.phone}</span>
 
-                          <span
-                            className="text-slate-300 hidden sm:inline"
-                            aria-hidden="true"
-                          >
+                          <span className="text-slate-300 hidden sm:inline" aria-hidden="true">
                             |
                           </span>
 
@@ -111,9 +94,7 @@ export default function ReviewList({
                         <Star
                           key={star}
                           className={`w-3.5 h-3.5 ${
-                            star <= item.rating
-                              ? "text-amber-400 fill-amber-400"
-                              : "text-slate-200"
+                            star <= item.rating ? "text-amber-400 fill-amber-400" : "text-slate-200"
                           }`}
                           aria-hidden="true"
                         />

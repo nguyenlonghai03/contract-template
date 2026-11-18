@@ -11,5 +11,27 @@ binding = "ASSETS"
 binding = "WORKER_SELF_REFERENCE"
 service = "contract-template-fe"
 
+# ---- Cache của OpenNext (xem open-next.config.ts) ----
+# Bucket phải được tạo trước khi deploy:
+#   npx wrangler r2 bucket create contract-template-fe-cache
+[[r2_buckets]]
+binding = "NEXT_INC_CACHE_R2_BUCKET"
+bucket_name = "contract-template-fe-cache"
+
+[[durable_objects.bindings]]
+name = "NEXT_CACHE_DO_QUEUE"
+class_name = "DOQueueHandler"
+
+[[durable_objects.bindings]]
+name = "NEXT_TAG_CACHE_DO_SHARDED"
+class_name = "DOShardedTagCache"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DOQueueHandler", "DOShardedTagCache"]
+
+# REVALIDATE_SECRET (secret dùng chung với backend cho /api/revalidate):
+#   npx wrangler secret put REVALIDATE_SECRET
+
 [observability]
 enabled = true

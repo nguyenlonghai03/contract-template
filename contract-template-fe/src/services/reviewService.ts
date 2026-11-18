@@ -3,14 +3,11 @@ import { REVALIDATE } from "@/lib/config";
 import { apiGet } from "./apiFetch";
 import { axiosClient } from "./axiosClient";
 
-export const reviewsTag = (contractId: number | string) =>
-  `reviews-${contractId}`;
+export const reviewsTag = (contractId: number | string) => `reviews-${contractId}`;
 
 // Lấy danh sách đánh giá đã duyệt (gọi từ Server Component, có cache).
 // Đánh giá mới phải chờ duyệt nên trễ tối đa REVALIDATE.reviews giây là chấp nhận được.
-export const getContractReviews = async (
-  contractId: number,
-): Promise<GetReviewsResponse> => {
+export const getContractReviews = async (contractId: number): Promise<GetReviewsResponse> => {
   return apiGet<GetReviewsResponse>(`/contracts/${contractId}/reviews`, {
     revalidate: REVALIDATE.reviews,
     tags: [reviewsTag(contractId)],
@@ -18,8 +15,6 @@ export const getContractReviews = async (
 };
 
 // Gửi đánh giá mới
-export const createReview = async (
-  payload: CreateReviewPayload,
-): Promise<void> => {
+export const createReview = async (payload: CreateReviewPayload): Promise<void> => {
   await axiosClient.post("/reviews", payload);
 };

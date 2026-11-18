@@ -1,46 +1,39 @@
 import { ContractContents } from "./contractContent";
 
 // ================= 1. HỢP ĐỒNG (CONTRACT) =================
+// Khớp với models.PublicContract của backend (snake_case, đúng kiểu dữ liệu).
+// Lưu ý: views / downloads / originalPrice backend lưu dạng chuỗi.
 export type Contract = {
-  id: string;
-  slug: string;
-  code: string;
+  id: number;
   title: string;
-  categoryId: string;
-  categoryName?: string;
+  slug: string;
+  description?: string;
   price: number;
-  originalPrice: number;
-  viewCount: number;
-  downloadCount: number;
-  description: string;
-  contentOverview?: string;
-  contentGuide?: string;
-  isApproved: boolean;
-  createdAt: string;
-  updatedAt: string;
-  views: number;
-  rating: number;
-  downloads: number;
+  created_at: string;
+  updated_at: string;
   preview_images: string[];
+  category_id: number;
+  contract_type_id: number;
+  views: string;
+  downloads: string;
+  originalPrice: string;
+  rating: number;
 
-  // Nội dung SEO
+  // Nội dung SEO (giới thiệu / thông tin / hướng dẫn) — cột contracts.contents
+  // (JSONB), chỉ có ở API chi tiết. Không có thì ContractInformation tự ẩn.
   contents?: ContractContents;
 };
 
-export type ContractInformationData = {
-  contract?: Contract;
-};
-
 export type ContractType = {
-  id: string;
+  id: number;
   name: string;
   slug: string;
 };
 
-// Định nghĩa kiểu cho response bọc (ví dụ)
 export type ContractTypeResponse = {
+  success?: boolean;
+  message?: string;
   data: ContractType[];
-  // các trường phụ nếu có như message, success...
 };
 
 export type ContractResponse = {
@@ -51,352 +44,12 @@ export type ContractResponse = {
   totalPages: number;
 };
 
-// ================= 2. ĐÁNH GIÁ (REVIEWS) =================
-export type ContractReview = {
-  id: string;
-  contractId: string;
-  avatarText: string;
-  name: string;
-  phone: string;
-  rating: number;
-  content: string;
-  date: string;
-  isApproved?: boolean;
-};
-
-// ================= 3. THANH TOÁN & ĐƠN HÀNG (PAYMENT & ORDER) =================
-export type PaymentOrder = {
-  orderId: string;
-  contractSlug: string;
-  amount: number;
-  bankName: string;
-  accountNo: string;
-  accountName: string;
-  transferContent: string;
-  status: "PENDING" | "SUCCESS" | "CANCELLED";
-  qrCodeUrl?: string;
-};
+// ================= 2. THANH TOÁN & ĐƠN HÀNG =================
+// Khớp models.OrderStatus* của backend.
+export type OrderStatus = "Pending" | "Success" | "Expired";
 
 export type PaymentStatusResponse = {
   success: boolean;
   message: string;
-  status: "Pending" | "Success" | "Cancelled";
-};
-
-export const mockContract: Contract = {
-  id: "mock-contract-001",
-  slug: "hop-dong-thue-nha",
-  code: "HDTN001",
-  title: "Mẫu hợp đồng thuê nhà mới nhất",
-  categoryId: "cat-real-estate",
-  categoryName: "Hợp đồng nhà đất",
-  price: 99000,
-  originalPrice: 149000,
-  viewCount: 1250,
-  downloadCount: 350,
-  description:
-    "Mẫu hợp đồng thuê nhà đầy đủ điều khoản, bảo vệ quyền lợi của bên cho thuê và bên thuê.",
-  contentOverview: "Nội dung tổng quan về hợp đồng thuê nhà.",
-  contentGuide: "Hướng dẫn sử dụng hợp đồng thuê nhà.",
-  isApproved: true,
-  createdAt: "2026-10-01T08:00:00.000Z",
-  updatedAt: "2026-11-10T08:00:00.000Z",
-  views: 1250,
-  rating: 4.9,
-  downloads: 350,
-  preview_images: [],
-
-  contents: {
-    // ================= GIỚI THIỆU =================
-    introduction: {
-      title: "Giới thiệu về hợp đồng thuê nhà",
-      blocks: [
-        {
-          type: "paragraph",
-          text: "Hợp đồng thuê nhà là văn bản thỏa thuận giữa bên cho thuê và bên thuê về việc sử dụng nhà ở trong một khoảng thời gian nhất định. Văn bản này xác lập quyền, nghĩa vụ và trách nhiệm pháp lý của các bên trong quá trình thực hiện giao dịch.",
-        },
-        {
-          type: "paragraph",
-          text: "Việc lập hợp đồng thuê nhà bằng văn bản giúp hạn chế tranh chấp, đảm bảo tính minh bạch về giá thuê, thời hạn thuê, tiền đặt cọc và các điều kiện sử dụng tài sản.",
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "1. Hợp đồng thuê nhà là gì?",
-        },
-        {
-          type: "paragraph",
-          text: "Hợp đồng thuê nhà là sự thỏa thuận theo đó bên cho thuê giao nhà cho bên thuê sử dụng trong một thời hạn nhất định và bên thuê phải trả tiền thuê theo thỏa thuận.",
-        },
-        {
-          type: "quote",
-          text: "Hợp đồng thuê nhà là cơ sở quan trọng để xác định quyền và nghĩa vụ của các bên trong suốt thời gian thuê.",
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "2. Khi nào cần sử dụng hợp đồng thuê nhà?",
-        },
-        {
-          type: "paragraph",
-          text: "Hợp đồng nên được lập trong mọi giao dịch cho thuê nhà, bất kể thời gian thuê dài hay ngắn, giá trị thuê cao hay thấp. Đặc biệt cần có văn bản khi giao dịch liên quan đến tài sản có giá trị lớn hoặc có khoản tiền đặt cọc.",
-        },
-        {
-          type: "list",
-          style: "bullet",
-          items: [
-            "Cho thuê nhà ở riêng lẻ.",
-            "Cho thuê căn hộ chung cư.",
-            "Cho thuê nhà nguyên căn để kinh doanh.",
-            "Cho thuê phòng trọ hoặc một phần diện tích nhà.",
-            "Cho thuê nhà làm văn phòng hoặc địa điểm kinh doanh.",
-          ],
-        },
-        {
-          type: "callout",
-          title: "Lưu ý quan trọng",
-          text: "Các bên nên kiểm tra giấy tờ chứng minh quyền sở hữu hoặc quyền cho thuê hợp pháp trước khi ký kết hợp đồng.",
-        },
-      ],
-    },
-
-    // ================= THÔNG TIN HỢP ĐỒNG =================
-    details: {
-      title: "Thông tin chi tiết hợp đồng thuê nhà",
-      blocks: [
-        {
-          type: "heading",
-          level: 3,
-          text: "1. Thông tin các bên tham gia hợp đồng",
-        },
-        {
-          type: "paragraph",
-          text: "Hợp đồng cần ghi nhận đầy đủ thông tin nhận diện của bên cho thuê và bên thuê để xác định chính xác chủ thể tham gia giao dịch.",
-        },
-        {
-          type: "list",
-          style: "bullet",
-          items: [
-            "Họ và tên đầy đủ của cá nhân hoặc tên tổ chức.",
-            "Số CCCD hoặc mã số doanh nghiệp.",
-            "Địa chỉ thường trú hoặc trụ sở chính.",
-            "Số điện thoại và thông tin liên hệ.",
-            "Thông tin người đại diện nếu bên tham gia là tổ chức.",
-          ],
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "2. Thông tin nhà cho thuê",
-        },
-        {
-          type: "paragraph",
-          text: "Đối tượng thuê cần được mô tả cụ thể để tránh nhầm lẫn về tài sản và phạm vi sử dụng. Các thông tin nên bao gồm địa chỉ, diện tích, kết cấu, hiện trạng và các tài sản đi kèm.",
-        },
-        {
-          type: "heading",
-          level: 4,
-          text: "2.1. Địa chỉ và diện tích",
-        },
-        {
-          type: "paragraph",
-          text: "Ghi rõ địa chỉ nhà, số tầng, diện tích sử dụng, diện tích đất và các khu vực được phép sử dụng chung hoặc riêng.",
-        },
-        {
-          type: "heading",
-          level: 4,
-          text: "2.2. Hiện trạng tài sản",
-        },
-        {
-          type: "paragraph",
-          text: "Các bên nên lập biên bản bàn giao ghi nhận tình trạng tường, sàn, trần, hệ thống điện nước, thiết bị vệ sinh, nội thất và những tài sản khác tại thời điểm bàn giao.",
-        },
-        {
-          type: "callout",
-          title: "Khuyến nghị",
-          text: "Nên chụp ảnh hoặc quay video hiện trạng nhà tại thời điểm bàn giao để làm căn cứ đối chiếu khi kết thúc hợp đồng.",
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "3. Giá thuê và phương thức thanh toán",
-        },
-        {
-          type: "paragraph",
-          text: "Giá thuê cần được ghi rõ bằng số và bằng chữ, đồng thời xác định thời điểm thanh toán, phương thức thanh toán và trách nhiệm đối với các khoản chi phí phát sinh.",
-        },
-        {
-          type: "list",
-          style: "number",
-          items: [
-            "Xác định số tiền thuê hàng tháng hoặc theo kỳ thanh toán.",
-            "Thỏa thuận ngày thanh toán cụ thể.",
-            "Ghi rõ hình thức thanh toán bằng tiền mặt hoặc chuyển khoản.",
-            "Quy định trách nhiệm thanh toán điện, nước, internet và các chi phí khác.",
-            "Thỏa thuận điều kiện và thời điểm điều chỉnh giá thuê nếu có.",
-          ],
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "4. Tiền đặt cọc",
-        },
-        {
-          type: "paragraph",
-          text: "Tiền đặt cọc là khoản tiền được các bên thỏa thuận nhằm bảo đảm việc thực hiện hợp đồng. Hợp đồng cần quy định rõ số tiền đặt cọc, thời điểm giao nhận và các trường hợp được khấu trừ hoặc hoàn trả.",
-        },
-        {
-          type: "quote",
-          text: "Các điều kiện xử lý tiền đặt cọc cần được quy định cụ thể, tránh sử dụng những điều khoản chung chung gây khó khăn khi phát sinh tranh chấp.",
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "5. Thời hạn thuê và bàn giao nhà",
-        },
-        {
-          type: "paragraph",
-          text: "Thời hạn thuê cần xác định ngày bắt đầu và ngày kết thúc. Các bên cũng nên thống nhất thời điểm bàn giao nhà, chìa khóa, thiết bị và tài sản đi kèm.",
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "6. Quyền và nghĩa vụ của bên cho thuê",
-        },
-        {
-          type: "list",
-          style: "number",
-          items: [
-            "Giao nhà đúng hiện trạng và thời điểm đã thỏa thuận.",
-            "Bảo đảm quyền sử dụng ổn định của bên thuê theo hợp đồng.",
-            "Thực hiện sửa chữa các hư hỏng thuộc trách nhiệm của mình.",
-            "Nhận tiền thuê đầy đủ và đúng thời hạn.",
-            "Yêu cầu bên thuê sử dụng nhà đúng mục đích đã thỏa thuận.",
-          ],
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "7. Quyền và nghĩa vụ của bên thuê",
-        },
-        {
-          type: "list",
-          style: "number",
-          items: [
-            "Nhận nhà đúng thời hạn và hiện trạng đã thỏa thuận.",
-            "Thanh toán tiền thuê và các chi phí liên quan đúng hạn.",
-            "Sử dụng nhà đúng mục đích.",
-            "Bảo quản tài sản và không tự ý thay đổi kết cấu nhà.",
-            "Bàn giao lại nhà khi hợp đồng chấm dứt.",
-          ],
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "8. Chấm dứt hợp đồng và giải quyết tranh chấp",
-        },
-        {
-          type: "paragraph",
-          text: "Hợp đồng cần quy định những trường hợp chấm dứt trước thời hạn, thời gian thông báo, trách nhiệm bồi thường và phương thức giải quyết tranh chấp.",
-        },
-        {
-          type: "callout",
-          title: "Lưu ý pháp lý",
-          text: "Các điều khoản về đơn phương chấm dứt hợp đồng cần được xây dựng phù hợp với quy định pháp luật hiện hành và thỏa thuận hợp pháp của các bên.",
-        },
-      ],
-    },
-
-    // ================= HƯỚNG DẪN =================
-    guide: {
-      title: "Hướng dẫn sử dụng hợp đồng thuê nhà",
-      blocks: [
-        {
-          type: "paragraph",
-          text: "Sau khi tải mẫu hợp đồng, bạn có thể chỉnh sửa trực tiếp bằng Microsoft Word để bổ sung thông tin phù hợp với giao dịch thực tế.",
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "1. Chuẩn bị thông tin trước khi điền hợp đồng",
-        },
-        {
-          type: "list",
-          style: "bullet",
-          items: [
-            "Thông tin cá nhân hoặc tổ chức của hai bên.",
-            "Giấy tờ chứng minh quyền sở hữu hoặc quyền cho thuê.",
-            "Thông tin chi tiết về căn nhà.",
-            "Giá thuê và phương thức thanh toán.",
-            "Thỏa thuận về tiền đặt cọc và thời hạn thuê.",
-          ],
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "2. Cách điền thông tin vào hợp đồng",
-        },
-        {
-          type: "paragraph",
-          text: "Điền đầy đủ thông tin vào các vị trí được đánh dấu trong tài liệu. Không nên để trống các nội dung quan trọng liên quan đến giá thuê, thời hạn, tiền đặt cọc và trách nhiệm của các bên.",
-        },
-        {
-          type: "heading",
-          level: 4,
-          text: "2.1. Kiểm tra thông tin cá nhân",
-        },
-        {
-          type: "paragraph",
-          text: "Đối chiếu họ tên, số giấy tờ tùy thân, địa chỉ và thông tin liên hệ với giấy tờ thực tế của từng bên.",
-        },
-        {
-          type: "heading",
-          level: 4,
-          text: "2.2. Kiểm tra các điều khoản",
-        },
-        {
-          type: "paragraph",
-          text: "Đọc kỹ từng điều khoản, đặc biệt là những nội dung liên quan đến nghĩa vụ thanh toán, sửa chữa tài sản, chấm dứt hợp đồng và xử lý tiền đặt cọc.",
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "3. Quy trình ký kết hợp đồng",
-        },
-        {
-          type: "list",
-          style: "number",
-          items: [
-            "Hai bên thống nhất toàn bộ nội dung hợp đồng.",
-            "Kiểm tra thông tin và các giấy tờ liên quan.",
-            "In hợp đồng thành số lượng bản phù hợp.",
-            "Hai bên ký và ghi rõ họ tên trên hợp đồng.",
-            "Mỗi bên giữ ít nhất một bản để thực hiện.",
-            "Lập biên bản bàn giao nhà và tài sản đi kèm nếu cần.",
-          ],
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "4. Những lưu ý khi sử dụng",
-        },
-        {
-          type: "list",
-          style: "bullet",
-          items: [
-            "Không ký hợp đồng khi còn điều khoản chưa được thống nhất.",
-            "Không giao tiền đặt cọc khi chưa xác minh quyền cho thuê.",
-            "Nên lưu giữ chứng từ thanh toán.",
-            "Nên lập biên bản bàn giao tài sản.",
-            "Mọi sửa đổi hợp đồng nên được lập thành văn bản có xác nhận của các bên.",
-          ],
-        },
-        {
-          type: "callout",
-          title: "Khuyến nghị từ chúng tôi",
-          text: "Đối với giao dịch có giá trị lớn, thời hạn thuê dài hoặc có điều khoản phức tạp, bạn nên tham khảo ý kiến luật sư trước khi ký kết để hạn chế rủi ro pháp lý.",
-        },
-      ],
-    },
-  },
+  status: OrderStatus;
 };

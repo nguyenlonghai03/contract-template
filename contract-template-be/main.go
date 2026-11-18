@@ -18,6 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"github.com/nguyenlonghai03/contract-template/contract-template-be/controllers"
 	database "github.com/nguyenlonghai03/contract-template/contract-template-be/database"
 	storage "github.com/nguyenlonghai03/contract-template/contract-template-be/internal/storage"
 	routes "github.com/nguyenlonghai03/contract-template/contract-template-be/routes"
@@ -48,7 +49,7 @@ func main() {
 
 // run initializes and starts the application.
 func run() error {
-	// 1. Initialize database
+	// 1. Initialize database (also loads ./.env)
 	db, err := database.ConnectDatabase()
 	if err != nil {
 		return fmt.Errorf("initialize database: %w", err)
@@ -60,6 +61,15 @@ func run() error {
 			log.Printf("Database shutdown error: %v", err)
 		}
 	}()
+
+	// Validate payment secrets (after .env is loaded) before accepting traffic.
+	if err := controllers.ValidatePaymentConfig(); err != nil {
+		return fmt.Errorf("invalid payment config: %w", err)
+	}
+
+	if strings.TrimSpace(os.Getenv("SEPAY_WEBHOOK_API_KEY")) == "" {
+		log.Println("WARNING: SEPAY_WEBHOOK_API_KEY is not set — every SePay webhook will be rejected (401)")
+	}
 
 	// 2. Initialize Cloudflare R2 client.
 	r2Client, err := storage.NewR2Client(context.Background())
@@ -104,6 +114,9 @@ func run() error {
 		syscall.SIGTERM,
 	)
 	defer stop()
+
+	// 6. Đối soát SePay định kỳ (bù webhook bị lỡ khi server tắt/mất mạng).
+	controllers.StartSePayReconciler(ctx, db)
 
 	select {
 	case err := <-serverErrors:
@@ -180,8 +193,10 @@ func setupRouter(db *gorm.DB, r2Client *s3.Client) (*gin.Engine, error) {
 		),
 	)
 
-	// 4. Disable trusting forwarded proxy headers.
-	if err := router.SetTrustedProxies(nil); err != nil {
+	// 4. Chỉ tin X-Forwarded-For từ reverse proxy đã biết (mặc định Caddy trên
+	// cùng máy). Trước đây SetTrustedProxies(nil) làm ClientIP() luôn là IP
+	// của Caddy nên không rate-limit theo IP được.
+	if err := router.SetTrustedProxies(getTrustedProxies()); err != nil {
 		return nil, fmt.Errorf("configure trusted proxies: %w", err)
 	}
 
@@ -304,6 +319,26 @@ func getAllowedOrigins() []string {
 	}
 
 	return origins
+}
+
+// getTrustedProxies đọc TRUSTED_PROXIES (IP/CIDR, phân tách bằng dấu phẩy).
+// Mặc định: loopback — khớp với Caddy reverse_proxy 127.0.0.1:8080.
+func getTrustedProxies() []string {
+	value := strings.TrimSpace(os.Getenv("TRUSTED_PROXIES"))
+
+	if value == "" {
+		return []string{"127.0.0.1", "::1"}
+	}
+
+	var proxies []string
+
+	for _, p := range strings.Split(value, ",") {
+		if p = strings.TrimSpace(p); p != "" {
+			proxies = append(proxies, p)
+		}
+	}
+
+	return proxies
 }
 
 // getPort returns the application port.

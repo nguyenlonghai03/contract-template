@@ -23,6 +23,10 @@ RUN apk add --no-cache poppler-utils
 # Copy file binary từ bản build ở trên
 COPY --from=builder /app/main .
 
+# Không chạy bằng root. Thư mục tạm (/tmp) vẫn ghi được cho việc sinh preview.
+RUN adduser -D -H -u 10001 app
+USER app
+
 # Cloud Run sẽ tự động truyền biến môi trường PORT vào, ứng dụng Go cần lắng nghe cổng này
 EXPOSE 8080
 

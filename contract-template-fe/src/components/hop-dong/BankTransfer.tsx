@@ -32,60 +32,52 @@ export default function BankTransfer({
     }
   };
 
-  const renderCopyButton = (value: string, field: string) => (
-    <button
-      type="button"
-      onClick={() => handleCopy(value, field)}
-      aria-label={`Sao chép ${field}`}
-      className="shrink-0 p-1 text-slate-400 hover:text-emerald-600 transition-colors"
-    >
-      {copiedField === field ? (
-        <Check className="w-4 h-4 text-emerald-600" />
-      ) : (
-        <Copy className="w-4 h-4" />
-      )}
-    </button>
-  );
+  // Chưa có dữ liệu từ API thì không cho sao chép chuỗi rỗng.
+  const renderCopyButton = (value: string, field: string) =>
+    value ? (
+      <button
+        type="button"
+        onClick={() => handleCopy(value, field)}
+        aria-label={`Sao chép ${field}`}
+        className="shrink-0 p-1 text-slate-400 hover:text-emerald-600 transition-colors"
+      >
+        {copiedField === field ? (
+          <Check className="w-4 h-4 text-emerald-600" />
+        ) : (
+          <Copy className="w-4 h-4" />
+        )}
+      </button>
+    ) : null;
 
   return (
     <div className="space-y-3">
       <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-3 space-y-2 text-sm">
-        <h3 className="text-center text-slate-500 font-medium pb-1">
-          Thông tin chuyển khoản
-        </h3>
+        <h3 className="text-center text-slate-500 font-medium pb-1">Thông tin chuyển khoản</h3>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 bg-white p-3 rounded-lg border border-slate-200/80">
-          <span className="text-slate-500 font-medium shrink-0">
-            Ngân hàng:
-          </span>
+          <span className="text-slate-500 font-medium shrink-0">Ngân hàng:</span>
 
           <span className="font-bold text-slate-800 text-left sm:text-right min-w-0 sm:max-w-[65%] break-words [overflow-wrap:anywhere]">
-            {bankName}
+            {bankName || "Đang tải..."}
           </span>
         </div>
 
         <div className="flex items-center justify-between gap-2 bg-white p-3 rounded-lg border border-slate-200/80">
-          <span className="text-slate-500 font-medium shrink-0">
-            Số tài khoản:
-          </span>
+          <span className="text-slate-500 font-medium shrink-0">Số tài khoản:</span>
 
           <div className="flex items-center gap-1 min-w-0">
-            <span className="font-bold text-slate-900 break-all">
-              {accountNo}
-            </span>
+            <span className="font-bold text-slate-900 break-all">{accountNo || "..."}</span>
 
             {renderCopyButton(accountNo, "số tài khoản")}
           </div>
         </div>
 
         <div className="flex items-center justify-between gap-2 bg-white p-3 rounded-lg border border-slate-200/80">
-          <span className="text-slate-500 font-medium shrink-0">
-            Tên tài khoản:
-          </span>
+          <span className="text-slate-500 font-medium shrink-0">Tên tài khoản:</span>
 
           <div className="flex items-center gap-1 min-w-0">
             <span className="font-bold text-slate-900 text-right break-words">
-              {accountName}
+              {accountName || "..."}
             </span>
 
             {renderCopyButton(accountName, "tên tài khoản")}
@@ -93,9 +85,7 @@ export default function BankTransfer({
         </div>
 
         <div className="flex items-center justify-between gap-2 bg-white p-3 rounded-lg border border-slate-200/80">
-          <span className="text-slate-500 font-medium shrink-0">
-            Nội dung CK:
-          </span>
+          <span className="text-slate-500 font-medium shrink-0">Nội dung CK:</span>
 
           <div className="flex items-center gap-1 min-w-0">
             <span className="font-bold text-emerald-700 break-all text-right">
@@ -120,8 +110,7 @@ export default function BankTransfer({
         </p>
 
         <p>
-          <strong>Lưu ý:</strong> Điền chính xác nội dung để hệ thống tự động
-          xác nhận thanh toán.
+          <strong>Lưu ý:</strong> Điền chính xác nội dung để hệ thống tự động xác nhận thanh toán.
         </p>
       </div>
     </div>

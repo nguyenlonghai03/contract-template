@@ -4,13 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { setAdminKey } from "@/services/axiosClient";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -21,7 +17,7 @@ export default function AdminLoginPage() {
 
     if (!apiKey.trim()) return;
 
-    localStorage.setItem("admin_api_key", apiKey.trim());
+    setAdminKey(apiKey.trim());
     router.push("/admin/contracts/new");
   };
 
@@ -35,10 +31,7 @@ export default function AdminLoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label
-                htmlFor="admin-api-key"
-                className="text-sm font-medium text-slate-700"
-              >
+              <label htmlFor="admin-api-key" className="text-sm font-medium text-slate-700">
                 Admin API Key
               </label>
 

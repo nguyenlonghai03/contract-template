@@ -1,3 +1,11 @@
-api.yourdomain.com {
+# Chua co domain rieng: dung nip.io (free, khong can dang ky).
+# Doi IP that cua VM vao day, thay "." bang "-", vi du IP 140.238.12.34
+# -> 140-238-12-34.nip.io
+140-238-12-34.nip.io {
 	reverse_proxy 127.0.0.1:8080
 }
+
+# Sau nay mua domain rieng, chi can doi khoi tren thanh:
+# api.yourdomain.com {
+# 	reverse_proxy 127.0.0.1:8080
+# }

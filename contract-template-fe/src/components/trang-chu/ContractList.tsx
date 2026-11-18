@@ -9,15 +9,9 @@ import {
 } from "../ui/pagination";
 
 import type { ContractResponse } from "@/types/contract";
+import { formatPrice } from "@/lib/format";
 
-import {
-  AlertCircle,
-  CheckCircle2,
-  Download,
-  Eye,
-  SearchX,
-  Star,
-} from "lucide-react";
+import { AlertCircle, CheckCircle2, Download, Eye, SearchX, Star } from "lucide-react";
 
 type ContractListProps = {
   // Dữ liệu được ContractCatalog tải sẵn (song song với API danh mục)
@@ -182,12 +176,14 @@ export default function ContractList({
 
               {/* RIGHT */}
               <div className="flex md:flex-col items-center md:items-end justify-between w-full md:w-auto shrink-0 border-t md:border-t-0 pt-2 md:pt-0 border-slate-100">
-                <span className="text-sm text-slate-400 line-through font-medium">
-                  {item.originalPrice}
-                </span>
+                {formatPrice(item.originalPrice) && (
+                  <span className="text-sm text-slate-400 line-through font-medium">
+                    {formatPrice(item.originalPrice)} đ
+                  </span>
+                )}
 
                 <span className="text-base font-extrabold text-emerald-600">
-                  {item.price}
+                  {formatPrice(item.price)} đ
                 </span>
               </div>
             </div>
@@ -204,11 +200,7 @@ export default function ContractList({
                 text="Trang trước"
                 href={getPageUrl(currentPage - 1)}
                 aria-disabled={currentPage <= 1}
-                className={
-                  currentPage <= 1
-                    ? "pointer-events-none opacity-40"
-                    : "cursor-pointer"
-                }
+                className={currentPage <= 1 ? "pointer-events-none opacity-40" : "cursor-pointer"}
               />
             </PaginationItem>
 
@@ -234,9 +226,7 @@ export default function ContractList({
                 href={getPageUrl(currentPage + 1)}
                 aria-disabled={currentPage >= totalPages}
                 className={
-                  currentPage >= totalPages
-                    ? "pointer-events-none opacity-40"
-                    : "cursor-pointer"
+                  currentPage >= totalPages ? "pointer-events-none opacity-40" : "cursor-pointer"
                 }
               />
             </PaginationItem>

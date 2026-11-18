@@ -3,16 +3,12 @@
 import { useState } from "react";
 import { Contract } from "@/types/contract";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import SuccessDownloadModal from "./SuccessDownloadModal";
 import { usePayment } from "@/hooks/usePayment";
 import { downloadContract } from "@/services/contractApi";
+import { formatPrice } from "@/lib/format";
 import PaymentTabs from "./PaymentTabs";
 import PaymentQr from "./PaymentQr";
 import BankTransfer from "./BankTransfer";
@@ -25,37 +21,24 @@ interface PaymentModalProps {
 
 type PaymentTab = "qr" | "bank";
 
-export default function PaymentModal({
-  isOpen,
-  onClose,
-  contract,
-}: PaymentModalProps) {
+export default function PaymentModal({ isOpen, onClose, contract }: PaymentModalProps) {
   const [activeTab, setActiveTab] = useState<PaymentTab>("qr");
 
-  const { qrData, orderCode, isLoading, isPaid, error } = usePayment({
-    isOpen,
-    contractId: Number(contract.id),
-  });
+  const { qrData, orderCode, accessToken, isLoading, isPaid, isPollingStopped, error } = usePayment(
+    {
+      isOpen,
+      contractId: Number(contract.id),
+    },
+  );
 
-  // Thông tin ngân hàng
-  const bankConfig = {
-    bankName: qrData?.bank_name || "TPBank (Ngân hàng TMCP Tiên Phong)",
-
-    accountNo: qrData?.account_no || "04494162701",
-
-    accountName: qrData?.account_name || "NGUYEN LONG HAI",
-  };
-
-  // Giá thanh toán
-  const rawPrice =
-    qrData?.amount ?? (contract.price ? Number(contract.price) : 2000);
-
-  const formattedPrice = Number(rawPrice).toLocaleString("vi-VN");
+  // Giá thanh toán: luôn ưu tiên số tiền của đơn (backend tính), chỉ dùng giá
+  // trên trang trong lúc chờ API.
+  const formattedPrice = formatPrice(qrData?.amount ?? contract.price);
 
   // Tải file
-  const handleDownload = async (fileType: "word" | "pdf") => {
+  const handleDownload = (fileType: "word" | "pdf") => {
     try {
-      await downloadContract(orderCode, contract, fileType);
+      downloadContract(orderCode, accessToken, fileType);
     } catch (error) {
       console.error("Lỗi tải file:", error);
       alert("Không thể tải file. Vui lòng thử lại sau.");
@@ -127,10 +110,7 @@ export default function PaymentModal({
 
         {isPaid ? (
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-            <SuccessDownloadModal
-              orderCode={orderCode}
-              onDownload={handleDownload}
-            />
+            <SuccessDownloadModal orderCode={orderCode} onDownload={handleDownload} />
           </div>
         ) : (
           <>
@@ -157,9 +137,7 @@ export default function PaymentModal({
                   Đơn hàng {orderCode || "Đang tạo..."}
                 </p>
 
-                <p className="text-xl font-extrabold text-emerald-600">
-                  {formattedPrice} đ
-                </p>
+                <p className="text-xl font-extrabold text-emerald-600">{formattedPrice} đ</p>
               </div>
 
               {error ? (
@@ -190,12 +168,19 @@ export default function PaymentModal({
 
                   {activeTab === "bank" && (
                     <BankTransfer
-                      bankName={bankConfig.bankName}
-                      accountNo={bankConfig.accountNo}
-                      accountName={bankConfig.accountName}
+                      bankName={qrData?.bank_name ?? ""}
+                      accountNo={qrData?.account_no ?? ""}
+                      accountName={qrData?.account_name ?? ""}
                       orderCode={orderCode}
                       formattedPrice={formattedPrice}
                     />
+                  )}
+
+                  {isPollingStopped && (
+                    <p role="status" className="text-center text-xs text-amber-700">
+                      Hệ thống đã ngừng tự kiểm tra thanh toán. Nếu bạn đã chuyển khoản, hãy đóng và
+                      mở lại cửa sổ này để kiểm tra lại.
+                    </p>
                   )}
                 </>
               )}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -30,6 +31,11 @@ func r2Bucket() string {
 // PDF/DOCX files to Cloudflare R2 under contracts/{id}/originals/ (private).
 func CreateContractHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Chặn body quá lớn NGAY khi đọc (trước đây Gin parse hết multipart ra
+		// disk tạm rồi mới kiểm tra kích thước từng file).
+		maxSize := utils.MaxUploadSizeBytes()
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 2*maxSize+multipartOverheadBytes)
+
 		title := strings.TrimSpace(c.PostForm("title"))
 		slug := strings.TrimSpace(c.PostForm("slug"))
 		description := strings.TrimSpace(c.PostForm("description"))
@@ -79,8 +85,6 @@ func CreateContractHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFunc {
 			})
 			return
 		}
-
-		maxSize := utils.MaxUploadSizeBytes()
 
 		if err := utils.ValidatePDF(pdfFile, maxSize); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
@@ -144,7 +148,7 @@ func CreateContractHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFunc {
 		// Step B: upload both originals. Roll back the draft row (and any already-uploaded
 		// file) if either upload fails, so we never leave an orphaned draft with no files.
 		if err := uploadFormFile(ctx, r2Client, bucket, pdfKey, pdfFile, "application/pdf"); err != nil {
-			db.Delete(&contract)
+			deleteDraftRow(db, contract.ID)
 
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
@@ -158,8 +162,8 @@ func CreateContractHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFunc {
 			ctx, r2Client, bucket, docxKey, docxFile,
 			"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 		); err != nil {
-			storage.DeleteObject(ctx, r2Client, bucket, pdfKey)
-			db.Delete(&contract)
+			deleteR2Object(ctx, r2Client, bucket, pdfKey)
+			deleteDraftRow(db, contract.ID)
 
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
@@ -174,6 +178,11 @@ func CreateContractHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFunc {
 			"pdf_object_key":  pdfKey,
 			"docx_object_key": docxKey,
 		}).Error; err != nil {
+			// Không để lại draft mồ côi (slug bị chiếm, file thừa trên R2).
+			deleteR2Object(ctx, r2Client, bucket, pdfKey)
+			deleteR2Object(ctx, r2Client, bucket, docxKey)
+			deleteDraftRow(db, contract.ID)
+
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
 				"message": "Không thể lưu object key vào Database",
@@ -197,7 +206,10 @@ func CreateContractHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFunc {
 // watermarked preview PNGs, and uploads them to R2 under contracts/{id}/previews/.
 func AdminGeneratePreviewHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
+		id, ok := parseContractIDParam(c)
+		if !ok {
+			return
+		}
 
 		var contract models.Contract
 
@@ -245,7 +257,7 @@ func AdminGeneratePreviewHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFu
 		// Reuse the existing blur/watermark preview generation logic as-is.
 		// publicURLPrefix is left empty; filenames are derived from the returned
 		// entries instead, since URLs here are R2-proxy URLs, not local paths.
-		generated, err := services.GenerateContractPreviews(tempPdfPath, tempOutDir, "")
+		generated, err := services.GenerateContractPreviews(ctx, tempPdfPath, tempOutDir, "")
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
@@ -298,6 +310,7 @@ func AdminGeneratePreviewHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFu
 
 		// Ảnh preview mới ghi đè cùng key trên R2 → xoá cache ảnh/chi tiết cũ.
 		InvalidateContractCaches(contract.ID)
+		notifyFrontendRevalidate(contract.ID)
 
 		c.JSON(http.StatusOK, gin.H{
 			"success":      true,
@@ -312,7 +325,10 @@ func AdminGeneratePreviewHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFu
 // once originals and at least one preview image exist.
 func PublishContractHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
+		id, ok := parseContractIDParam(c)
+		if !ok {
+			return
+		}
 
 		var contract models.Contract
 
@@ -359,6 +375,7 @@ func PublishContractHandler(db *gorm.DB) gin.HandlerFunc {
 
 		// Hợp đồng vừa publish phải xuất hiện ngay trong danh sách/chi tiết công khai.
 		InvalidateContractCaches(contract.ID)
+		notifyFrontendRevalidate(contract.ID)
 
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
@@ -372,7 +389,10 @@ func PublishContractHandler(db *gorm.DB) gin.HandlerFunc {
 // proxy preview URLs, for the admin wizard to re-fetch after a page refresh.
 func GetAdminContractHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
+		id, ok := parseContractIDParam(c)
+		if !ok {
+			return
+		}
 
 		var contract models.Contract
 
@@ -389,6 +409,36 @@ func GetAdminContractHandler(db *gorm.DB) gin.HandlerFunc {
 			"data":         contract,
 			"preview_urls": previewURLsFor(contract.ID, contract.PreviewObjectKeys),
 		})
+	}
+}
+
+// Dư cho các field text + boundary của multipart, ngoài 2 file.
+const multipartOverheadBytes = 1 << 20
+
+// parseContractIDParam đọc :id dạng số nguyên dương. Không truyền thẳng
+// chuỗi vào db.First vì GORM coi chuỗi không phải số là SQL thô.
+func parseContractIDParam(c *gin.Context) (uint64, bool) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil || id == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "Không tìm thấy hợp đồng",
+		})
+		return 0, false
+	}
+
+	return id, true
+}
+
+func deleteDraftRow(db *gorm.DB, id uint) {
+	if err := db.Delete(&models.Contract{}, id).Error; err != nil {
+		log.Printf("rollback: delete draft contract %d: %v", id, err)
+	}
+}
+
+func deleteR2Object(ctx context.Context, client *s3.Client, bucket, key string) {
+	if err := storage.DeleteObject(ctx, client, bucket, key); err != nil {
+		log.Printf("rollback: delete R2 object %s: %v", key, err)
 	}
 }
 
