@@ -6,7 +6,7 @@ import { axiosClient } from "./axiosClient";
 export const reviewsTag = (contractId: number | string) => `reviews-${contractId}`;
 
 // Lấy danh sách đánh giá đã duyệt (gọi từ Server Component, có cache).
-// Đánh giá mới phải chờ duyệt nên trễ tối đa REVALIDATE.reviews giây là chấp nhận được.
+// Review được duyệt tự động; sau khi gửi, refreshContractReviews (reviewActions.ts) xoá tag này ngay.
 export const getContractReviews = async (contractId: number): Promise<GetReviewsResponse> => {
   return apiGet<GetReviewsResponse>(`/contracts/${contractId}/reviews`, {
     revalidate: REVALIDATE.reviews,

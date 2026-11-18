@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	models "github.com/nguyenlonghai03/contract-template/contract-template-be/models"
+	"github.com/nguyenlonghai03/contract-template/contract-template-be/services"
 	"gorm.io/gorm"
 )
 
@@ -57,13 +59,35 @@ func CreateReviewHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		// Kiểm duyệt tự động: chặn từ ngữ thô tục, link/liên hệ quảng cáo, spam.
+		switch services.ModerateReview(input.AuthorName, input.Comment) {
+		case services.ReviewProfanity:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Nội dung đánh giá chứa từ ngữ không phù hợp, vui lòng chỉnh sửa lại"})
+			return
+		case services.ReviewContainsURL:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Đánh giá không được chứa đường link hoặc thông tin liên hệ"})
+			return
+		case services.ReviewSpam:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Nội dung đánh giá không hợp lệ, vui lòng viết nhận xét về mẫu hợp đồng"})
+			return
+		}
+
+		if status, message, err := checkReviewSpam(db, input); err != nil {
+			log.Printf("create review: spam check: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể lưu đánh giá, vui lòng thử lại sau"})
+			return
+		} else if status != 0 {
+			c.JSON(status, gin.H{"error": message})
+			return
+		}
+
 		review := models.Review{
 			ContractID: input.ContractID,
 			AuthorName: input.AuthorName,
 			Phone:      input.Phone,
 			Rating:     input.Rating,
 			Comment:    input.Comment,
-			IsApproved: false, // chờ kiểm duyệt
+			IsApproved: true, // đã qua kiểm duyệt tự động → hiển thị ngay
 		}
 
 		if err := db.Create(&review).Error; err != nil {
@@ -72,8 +96,11 @@ func CreateReviewHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		// Review hiển thị ngay: xoá cache danh sách review của hợp đồng này.
+		publicJSONCache.Delete(fmt.Sprintf("%s%d", cacheKeyReviewsPrefix, review.ContractID))
+
 		c.JSON(http.StatusOK, gin.H{
-			"message": "Gửi đánh giá thành công! Đang chờ kiểm duyệt.",
+			"message": "Gửi đánh giá thành công! Cảm ơn bạn đã đánh giá.",
 			"data": gin.H{
 				"id":          review.ID,
 				"contract_id": review.ContractID,
@@ -81,6 +108,46 @@ func CreateReviewHandler(db *gorm.DB) gin.HandlerFunc {
 			},
 		})
 	}
+}
+
+const (
+	reviewSpamWindow           = 24 * time.Hour
+	maxReviewsPerPhone         = 5 // số review tối đa 1 SĐT gửi trong reviewSpamWindow
+	maxReviewsPerPhoneContract = 3 // số review tối đa 1 SĐT gửi cho cùng 1 hợp đồng
+)
+
+// checkReviewSpam chặn spam theo dữ liệu đã lưu. Trả status != 0 kèm thông báo
+// khi phải từ chối:
+//   - 1 SĐT tối đa maxReviewsPerPhoneContract review cho mỗi hợp đồng
+//   - 1 SĐT tối đa maxReviewsPerPhone review / 24h
+func checkReviewSpam(db *gorm.DB, input createReviewRequest) (int, string, error) {
+	// Chỉ đếm review đang hiển thị: review cũ còn chờ duyệt / bị admin ẩn không tính.
+	var sameContract int64
+	if err := db.Model(&models.Review{}).
+		Where("contract_id = ? AND phone = ? AND is_approved = ?", input.ContractID, input.Phone, true).
+		Count(&sameContract).Error; err != nil {
+		return 0, "", err
+	}
+	if sameContract >= maxReviewsPerPhoneContract {
+		return http.StatusConflict, fmt.Sprintf(
+			"Mỗi số điện thoại chỉ được đánh giá tối đa %d lần cho một mẫu hợp đồng",
+			maxReviewsPerPhoneContract,
+		), nil
+	}
+
+	since := time.Now().Add(-reviewSpamWindow)
+
+	var recentByPhone int64
+	if err := db.Model(&models.Review{}).
+		Where("phone = ? AND created_at >= ?", input.Phone, since).
+		Count(&recentByPhone).Error; err != nil {
+		return 0, "", err
+	}
+	if recentByPhone >= maxReviewsPerPhone {
+		return http.StatusTooManyRequests, "Bạn đã gửi quá nhiều đánh giá, vui lòng thử lại sau", nil
+	}
+
+	return 0, "", nil
 }
 
 // Hàm hỗ trợ ẩn bớt số điện thoại (Ví dụ: 0981234391 -> 098****391)
@@ -103,7 +170,7 @@ func GetReviewsHandler(db *gorm.DB) gin.HandlerFunc {
 
 		key := fmt.Sprintf("%s%d", cacheKeyReviewsPrefix, contractID)
 
-		// Đánh giá mới luôn phải chờ duyệt nên cache ngắn hạn không làm sai dữ liệu.
+		// CreateReviewHandler xoá key này sau khi lưu review mới nên review hiện ngay.
 		serveCachedJSON(c, key, listMaxAge, "Lỗi khi truy vấn database", func() (any, error) {
 			var reviews []models.Review
 
