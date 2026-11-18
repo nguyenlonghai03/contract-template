@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"github.com/disintegration/imaging"
 	"image"
@@ -8,12 +9,16 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/fogleman/gg"
 )
 
+// pdftoppm có thể treo hoặc tốn rất nhiều CPU với PDF lớn/độc hại: luôn giới hạn thời gian.
+const pdfRenderTimeout = 2 * time.Minute
+
 // GenerateContractPreviews nhận vào đường dẫn file PDF, trả về danh sách URL/đường dẫn các ảnh preview
-func GenerateContractPreviews(pdfPath string, outputDir string, publicURLPrefix string) ([]string, error) {
+func GenerateContractPreviews(ctx context.Context, pdfPath string, outputDir string, publicURLPrefix string) ([]string, error) {
 	// 1. Đảm bảo thư mục lưu ảnh preview tồn tại
 	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
 		return nil, fmt.Errorf("không thể tạo thư mục output: %v", err)
@@ -26,7 +31,10 @@ func GenerateContractPreviews(pdfPath string, outputDir string, publicURLPrefix 
 	// 2. Chạy lệnh pdftoppm để xuất toàn bộ trang PDF ra file PNG tạm thời
 	// Yêu cầu máy chủ phải đã cài đặt công cụ poppler-utils (lệnh pdftoppm)
 	tempPrefix := filepath.Join(outputDir, "temp_"+nameWithoutExt)
-	cmd := exec.Command("pdftoppm", "-png", "-r", "150", pdfPath, tempPrefix)
+	renderCtx, cancel := context.WithTimeout(ctx, pdfRenderTimeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(renderCtx, "pdftoppm", "-png", "-r", "150", pdfPath, tempPrefix)
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("lỗi khi chạy pdftoppm (kiểm tra poppler-utils): %v", err)
 	}

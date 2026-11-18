@@ -1,8 +1,9 @@
--- 1. Xóa bảng cũ nếu đã tồn tại
-DROP TABLE IF EXISTS orders CASCADE;
+-- Tạo bảng orders (KHÔNG còn DROP TABLE: chạy lại file này không được xoá đơn hàng).
+-- Cột checkout_session_id + kiểu amount BIGINT được bổ sung ở 005.
 
--- 2. Tạo lại bảng orders mới với cấu trúc chuẩn
-CREATE TABLE orders (
+
+-- 1. Bảng orders
+CREATE TABLE IF NOT EXISTS orders (
     id VARCHAR(255) PRIMARY KEY,                    -- Mã đơn hàng dùng làm nội dung chuyển khoản
     contract_id BIGINT NOT NULL,                    -- Khách mua mẫu hợp đồng nào
     amount NUMERIC(12, 2) NOT NULL,                 -- Số tiền cần thanh toán
@@ -16,5 +17,5 @@ CREATE TABLE orders (
         ON DELETE RESTRICT
 );
 
--- 3. Tạo Index tối ưu tìm kiếm trạng thái
-CREATE INDEX idx_orders_status ON orders(status);
+-- 2. Tạo Index tối ưu tìm kiếm trạng thái
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);

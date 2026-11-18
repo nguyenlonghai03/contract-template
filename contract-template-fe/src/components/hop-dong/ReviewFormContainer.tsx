@@ -21,15 +21,12 @@ type ReviewFormContainerProps = {
 // Toàn bộ phần form đánh giá (react-hook-form + zod + axios) được tách riêng
 // và tải lazy từ CustomerReviewsClient, để các thư viện nặng này không nằm
 // trong JS bắt buộc của trang chi tiết hợp đồng.
-export default function ReviewFormContainer({
-  contractId,
-}: ReviewFormContainerProps) {
+export default function ReviewFormContainer({ contractId }: ReviewFormContainerProps) {
   const router = useRouter();
 
   const numericContractId = Number(contractId);
 
-  const isValidContractId =
-    Number.isSafeInteger(numericContractId) && numericContractId > 0;
+  const isValidContractId = Number.isSafeInteger(numericContractId) && numericContractId > 0;
 
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
@@ -52,9 +49,7 @@ export default function ReviewFormContainer({
     mutationFn: createReview,
 
     onSuccess: () => {
-      setSuccessMessage(
-        "Gửi đánh giá thành công! Đang chờ quản trị viên kiểm duyệt.",
-      );
+      setSuccessMessage("Gửi đánh giá thành công! Đang chờ quản trị viên kiểm duyệt.");
 
       setErrorMessage("");
 
@@ -71,6 +66,7 @@ export default function ReviewFormContainer({
       if (axios.isAxiosError(error)) {
         setErrorMessage(
           error.response?.data?.error ||
+            error.response?.data?.message ||
             "Không thể gửi đánh giá, vui lòng thử lại sau.",
         );
       } else {

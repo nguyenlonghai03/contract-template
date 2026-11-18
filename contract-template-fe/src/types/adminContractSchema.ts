@@ -9,10 +9,7 @@ export const adminContractSchema = z.object({
     .string()
     .trim()
     .min(1, "Vui lòng điền slug!")
-    .regex(
-      /^[a-z0-9]+(-[a-z0-9]+)*$/,
-      "Slug chỉ gồm chữ thường, số và dấu gạch ngang!",
-    ),
+    .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Slug chỉ gồm chữ thường, số và dấu gạch ngang!"),
 
   description: z.string().trim().min(1, "Vui lòng điền mô tả!"),
 

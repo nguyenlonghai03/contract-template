@@ -2,36 +2,83 @@ package controllers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
-	models "github.com/nguyenlonghai03/contract-template/contract-template-be/models" // Thay bằng package path thực tế của bạn
+	models "github.com/nguyenlonghai03/contract-template/contract-template-be/models"
 	"gorm.io/gorm"
 )
+
+// createReviewRequest chỉ nhận đúng các field khách được phép gửi. Không bind
+// thẳng vào models.Review (có gorm.Model) để client không ghi được id,
+// created_at, deleted_at hay is_approved.
+type createReviewRequest struct {
+	ContractID uint   `json:"contract_id" binding:"required"`
+	AuthorName string `json:"author_name" binding:"required,max=100"`
+	Phone      string `json:"phone" binding:"required,max=20"`
+	Rating     int    `json:"rating" binding:"required,min=1,max=5"`
+	Comment    string `json:"comment" binding:"required,max=2000"`
+}
 
 // 1. API Gửi đánh giá mới (POST)
 func CreateReviewHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var input models.Review
+		var input createReviewRequest
 
-		// Bind dữ liệu JSON từ client gửi lên
 		if err := c.ShouldBindJSON(&input); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu không hợp lệ: " + err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu đánh giá không hợp lệ, vui lòng kiểm tra lại"})
 			return
 		}
 
-		// Mặc định khi khách gửi lên thì IsApproved = false (chờ duyệt)
-		input.IsApproved = false
+		input.AuthorName = strings.TrimSpace(input.AuthorName)
+		input.Phone = strings.TrimSpace(input.Phone)
+		input.Comment = strings.TrimSpace(input.Comment)
 
-		if err := db.Create(&input).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể lưu đánh giá: " + err.Error()})
+		if input.AuthorName == "" || input.Phone == "" || input.Comment == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Vui lòng nhập đầy đủ họ tên, số điện thoại và nội dung"})
+			return
+		}
+
+		// Chỉ cho đánh giá hợp đồng đang được bán công khai
+		var count int64
+		if err := db.Model(&models.Contract{}).
+			Where("id = ? AND status = ?", input.ContractID, models.ContractStatusPublished).
+			Count(&count).Error; err != nil {
+			log.Printf("create review: check contract %d: %v", input.ContractID, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể lưu đánh giá, vui lòng thử lại sau"})
+			return
+		}
+
+		if count == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy mẫu hợp đồng"})
+			return
+		}
+
+		review := models.Review{
+			ContractID: input.ContractID,
+			AuthorName: input.AuthorName,
+			Phone:      input.Phone,
+			Rating:     input.Rating,
+			Comment:    input.Comment,
+			IsApproved: false, // chờ kiểm duyệt
+		}
+
+		if err := db.Create(&review).Error; err != nil {
+			log.Printf("create review: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể lưu đánh giá, vui lòng thử lại sau"})
 			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Gửi đánh giá thành công! Đang chờ kiểm duyệt.",
-			"data":    input,
+			"data": gin.H{
+				"id":          review.ID,
+				"contract_id": review.ContractID,
+				"rating":      review.Rating,
+			},
 		})
 	}
 }

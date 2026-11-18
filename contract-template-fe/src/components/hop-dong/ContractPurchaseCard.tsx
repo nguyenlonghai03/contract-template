@@ -1,22 +1,13 @@
 import { ShieldCheck, CheckCircle, Lock, Star } from "lucide-react";
 import PurchaseButton from "./PurchaseButton";
 import { Contract } from "@/types/contract";
+import { formatPrice } from "@/lib/format";
 
 type ContractPurchaseCardProps = {
   contract: Contract;
 };
 
-function formatPrice(price: number | string) {
-  const num = Number(price);
-
-  if (!Number.isFinite(num)) return price;
-
-  return num.toLocaleString("vi-VN");
-}
-
-export default function ContractPurchaseCard({
-  contract,
-}: ContractPurchaseCardProps) {
+export default function ContractPurchaseCard({ contract }: ContractPurchaseCardProps) {
   return (
     <section className="bg-white rounded-2xl shadow-xl border border-slate-200/80 p-4 sm:p-6 space-y-6 sticky top-24">
       <div className="space-y-3">
@@ -33,9 +24,7 @@ export default function ContractPurchaseCard({
           {contract.rating != null && (
             <div className="flex items-center gap-1.5 text-slate-500 font-medium">
               <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-              <span className="text-slate-700">
-                {Number(contract.rating).toFixed(1)}
-              </span>
+              <span className="text-slate-700">{Number(contract.rating).toFixed(1)}</span>
             </div>
           )}
 
@@ -51,13 +40,9 @@ export default function ContractPurchaseCard({
 
       <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-sm text-slate-400 font-medium">
-            Tải về toàn bộ file
-          </div>
+          <div className="text-sm text-slate-400 font-medium">Tải về toàn bộ file</div>
           <div className="text-2xl font-black text-emerald-600 tracking-tight">
-            {contract.price != null
-              ? `${formatPrice(contract.price)} đ`
-              : "1.000 đ"}
+            {contract.price != null ? `${formatPrice(contract.price)} đ` : "1.000 đ"}
           </div>
         </div>
 
@@ -65,9 +50,7 @@ export default function ContractPurchaseCard({
           <span className="text-[11px] text-slate-600 font-medium block">
             Bao gồm File Word, PDF
           </span>
-          <span className="text-[11px] text-slate-500 block">
-            Hướng dẫn chi tiết
-          </span>
+          <span className="text-[11px] text-slate-500 block">Hướng dẫn chi tiết</span>
         </div>
       </div>
 

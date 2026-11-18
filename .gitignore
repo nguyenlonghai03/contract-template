@@ -47,3 +47,8 @@ contract-template-be/storage/
 # Build artifacts (Go binary, ví dụ từ `air` live-reload hoặc go build -o tmp/)
 contract-template-be/tmp/
 *.exe
+# Claude hook backups
+*.bak
+
+# Claude Code: cấu hình cá nhân
+.claude/settings.local.json

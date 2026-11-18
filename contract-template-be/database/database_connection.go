@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	defaultDBHost  = "localhost"
-	defaultDBPort  = "5432"
-	defaultSSLMode = "disable"
+	defaultDBHost = "localhost"
+	defaultDBPort = "5432"
+	// Neon (dev + prod) bắt buộc TLS; Postgres local không TLS thì đặt DB_SSLMODE=disable.
+	defaultSSLMode = "require"
 
 	defaultMaxOpenConns = 10
 	defaultMaxIdleConns = 5

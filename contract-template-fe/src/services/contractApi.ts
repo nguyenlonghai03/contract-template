@@ -1,9 +1,4 @@
-import {
-  Contract,
-  ContractResponse,
-  ContractType,
-  ContractTypeResponse,
-} from "@/types/contract";
+import { Contract, ContractResponse, ContractType, ContractTypeResponse } from "@/types/contract";
 import { API_BASE_URL, REVALIDATE } from "@/lib/config";
 import { apiGet } from "./apiFetch";
 
@@ -49,14 +44,11 @@ export const getContractsByContractType = async (
   page: number = 1,
   limit: number = 6,
 ): Promise<ContractResponse> => {
-  return apiGet<ContractResponse>(
-    `/contracts/type/${encodeURIComponent(String(typeId))}`,
-    {
-      params: { page, limit },
-      revalidate: REVALIDATE.contractList,
-      tags: [CONTRACT_TAGS.list],
-    },
-  );
+  return apiGet<ContractResponse>(`/contracts/type/${encodeURIComponent(String(typeId))}`, {
+    params: { page, limit },
+    revalidate: REVALIDATE.contractList,
+    tags: [CONTRACT_TAGS.list],
+  });
 };
 
 type FileType = "word" | "pdf";
@@ -64,23 +56,22 @@ type FileType = "word" | "pdf";
 // Điều hướng trực tiếp tới endpoint download (không fetch blob qua JS).
 // Lý do: với hợp đồng tạo qua Admin, backend trả 302 redirect sang R2 — nếu
 // fetch bằng axios/XHR, trình duyệt sẽ chặn đọc response vì R2 không cấu hình
-// CORS cho origin của FE. Điều hướng <a> thì trình duyệt tự theo redirect và
-// lưu file theo header Content-Disposition mà backend đã set (ở cả 2 nhánh
-// R2 và local disk), không cần biết tên file ở phía client.
-export async function downloadContract(
-  orderCode: string,
-  contract: Contract,
-  fileType: FileType,
-) {
-  void contract; // tên file đã do backend quyết định qua Content-Disposition
-
-  const downloadUrl =
-    `${API_BASE_URL}/contract/download` +
-    `?order_code=${encodeURIComponent(orderCode)}` +
-    `&type=${fileType}`;
+// CORS cho origin của FE. Điều hướng thì trình duyệt tự theo redirect và lưu
+// file theo header Content-Disposition mà backend đã set.
+//
+// Mở ở TAB MỚI: tải thành công thì tab tự đóng; nếu backend trả lỗi (403/404
+// JSON) thì lỗi hiện ở tab mới, khách không bị đẩy khỏi trang + modal.
+export function downloadContract(orderCode: string, accessToken: string, fileType: FileType) {
+  const params = new URLSearchParams({
+    order_code: orderCode,
+    access_token: accessToken,
+    type: fileType,
+  });
 
   const link = document.createElement("a");
-  link.href = downloadUrl;
+  link.href = `${API_BASE_URL}/contract/download?${params.toString()}`;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
 
   document.body.appendChild(link);
   link.click();

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
@@ -17,31 +18,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { getContractTypes } from "@/services/contractApi";
-import type { ContractType } from "@/types/contract";
+import { resolveBackendUrl } from "@/lib/config";
 import { slugify } from "@/lib/stringUtils";
+import { adminContractSchema, AdminContractFormValues } from "@/types/adminContractSchema";
 import {
-  adminContractSchema,
-  AdminContractFormValues,
-} from "@/types/adminContractSchema";
-import {
+  useAdminContract,
+  useAdminContractTypes,
   useCreateContract,
   useGeneratePreview,
   usePublishContract,
 } from "@/hooks/useAdminContract";
 
-const BACKEND_ORIGIN = (
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api"
-).replace(/\/api\/?$/, "");
-
 type Step = "form" | "preview" | "published";
+
+// contractId nằm trên URL (?id=...) để tải lại trang / mở lại tab vẫn làm
+// tiếp được bản Draft đang dở, thay vì để lại Draft mồ côi chiếm slug.
+function parseContractId(value: string | null): number | null {
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
 
 function getErrorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {
@@ -63,13 +60,7 @@ type FileUploadBoxProps = {
   onChange: (file: File | null) => void;
 };
 
-function FileUploadBox({
-  label,
-  accept,
-  file,
-  disabled,
-  onChange,
-}: FileUploadBoxProps) {
+function FileUploadBox({ label, accept, file, disabled, onChange }: FileUploadBoxProps) {
   return (
     <label
       className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition cursor-pointer ${
@@ -94,11 +85,7 @@ function FileUploadBox({
         <Upload className="w-8 h-8 text-slate-400" />
       )}
 
-      <span
-        className={`text-sm font-semibold ${
-          file ? "text-emerald-700" : "text-slate-700"
-        }`}
-      >
+      <span className={`text-sm font-semibold ${file ? "text-emerald-700" : "text-slate-700"}`}>
         {label}
       </span>
 
@@ -113,14 +100,28 @@ function FileUploadBox({
   );
 }
 
+// useSearchParams cần Suspense boundary khi build.
 export default function NewAdminContractPage() {
-  const [step, setStep] = useState<Step>("form");
-  const [contractId, setContractId] = useState<number | null>(null);
-  const [contractTypes, setContractTypes] = useState<ContractType[]>([]);
+  return (
+    <Suspense fallback={null}>
+      <NewAdminContractWizard />
+    </Suspense>
+  );
+}
+
+function NewAdminContractWizard() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const contractId = parseContractId(searchParams.get("id"));
+
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [docxFile, setDocxFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+
+  const contractTypesQuery = useAdminContractTypes();
+  const contractTypes = contractTypesQuery.data ?? [];
+
+  const savedContract = useAdminContract(contractId);
 
   const form = useForm<AdminContractFormValues>({
     resolver: zodResolver(adminContractSchema),
@@ -145,11 +146,26 @@ export default function NewAdminContractPage() {
   const generatePreview = useGeneratePreview();
   const publishContract = usePublishContract();
 
+  // Ảnh preview mới sinh trong phiên này, nếu không thì lấy từ Draft đã lưu.
+  const previewUrls = generatePreview.data?.preview_urls ?? savedContract.data?.preview_urls ?? [];
+
+  const isPublished = publishContract.isSuccess || savedContract.data?.data.status === "published";
+
+  const step: Step = !contractId ? "form" : isPublished ? "published" : "preview";
+
+  // Mở lại Draft đang dở: điền lại thông tin đã lưu vào form (chỉ để xem).
+  const savedData = savedContract.data?.data;
   useEffect(() => {
-    getContractTypes()
-      .then(setContractTypes)
-      .catch(() => setContractTypes([]));
-  }, []);
+    if (!savedData) return;
+
+    form.reset({
+      title: savedData.title,
+      contract_type_id: String(savedData.contract_type_id),
+      slug: savedData.slug,
+      description: savedData.description ?? "",
+      price: String(savedData.price),
+    });
+  }, [savedData, form]);
 
   // Tự sinh slug theo title, trừ khi admin đã tự sửa slug khác với bản auto-generate trước đó.
   const handleTitleChange = (value: string) => {
@@ -197,8 +213,8 @@ export default function NewAdminContractPage() {
 
     createContract.mutate(formData, {
       onSuccess: (res) => {
-        setContractId(res.data.id);
-        setStep("preview");
+        // Đưa id lên URL: tải lại trang vẫn tiếp tục được bước 2/3.
+        router.replace(`?id=${res.data.id}`);
       },
     });
   };
@@ -206,24 +222,18 @@ export default function NewAdminContractPage() {
   const handleGeneratePreview = () => {
     if (!contractId) return;
 
-    generatePreview.mutate(contractId, {
-      onSuccess: (res) => setPreviewUrls(res.preview_urls),
-    });
+    generatePreview.mutate(contractId);
   };
 
   const handlePublish = () => {
     if (!contractId) return;
 
-    publishContract.mutate(contractId, {
-      onSuccess: () => setStep("published"),
-    });
+    publishContract.mutate(contractId);
   };
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
-      <h1 className="text-xl font-semibold text-slate-900">
-        Tạo hợp đồng mẫu mới
-      </h1>
+      <h1 className="text-xl font-semibold text-slate-900">Tạo hợp đồng mẫu mới</h1>
 
       {/* BƯỚC 1: THÔNG TIN + UPLOAD FILE GỐC */}
       <Card className={step !== "form" ? "opacity-60" : ""}>
@@ -234,31 +244,23 @@ export default function NewAdminContractPage() {
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">
-                Tên hợp đồng
-              </label>
+              <label className="text-sm font-medium text-slate-700">Tên hợp đồng</label>
               <Input
                 disabled={step !== "form"}
                 value={form.watch("title")}
                 onChange={(e) => handleTitleChange(e.target.value)}
                 placeholder="Ví dụ: Hợp đồng thuê nhà"
               />
-              {errors.title && (
-                <p className="text-xs text-red-500">{errors.title.message}</p>
-              )}
+              {errors.title && <p className="text-xs text-red-500">{errors.title.message}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">
-                Loại hợp đồng
-              </label>
+              <label className="text-sm font-medium text-slate-700">Loại hợp đồng</label>
               <Select
                 items={contractTypeItems}
                 disabled={step !== "form"}
                 value={form.watch("contract_type_id")}
-                onValueChange={(value) =>
-                  form.setValue("contract_type_id", value as string)
-                }
+                onValueChange={(value) => form.setValue("contract_type_id", value as string)}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Chọn loại hợp đồng" />
@@ -271,31 +273,28 @@ export default function NewAdminContractPage() {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.contract_type_id && (
+              {contractTypesQuery.isError && (
                 <p className="text-xs text-red-500">
-                  {errors.contract_type_id.message}
+                  Không tải được danh sách loại hợp đồng, vui lòng tải lại trang.
                 </p>
+              )}
+              {errors.contract_type_id && (
+                <p className="text-xs text-red-500">{errors.contract_type_id.message}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">
-                Slug
-              </label>
+              <label className="text-sm font-medium text-slate-700">Slug</label>
               <Input
                 disabled={step !== "form"}
                 {...form.register("slug")}
                 placeholder="hop-dong-thue-nha"
               />
-              {errors.slug && (
-                <p className="text-xs text-red-500">{errors.slug.message}</p>
-              )}
+              {errors.slug && <p className="text-xs text-red-500">{errors.slug.message}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">
-                Mô tả
-              </label>
+              <label className="text-sm font-medium text-slate-700">Mô tả</label>
               <Textarea
                 disabled={step !== "form"}
                 rows={4}
@@ -303,25 +302,19 @@ export default function NewAdminContractPage() {
                 placeholder="Mô tả ngắn về hợp đồng"
               />
               {errors.description && (
-                <p className="text-xs text-red-500">
-                  {errors.description.message}
-                </p>
+                <p className="text-xs text-red-500">{errors.description.message}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">
-                Giá bán (VNĐ)
-              </label>
+              <label className="text-sm font-medium text-slate-700">Giá bán (VNĐ)</label>
               <Input
                 disabled={step !== "form"}
                 type="number"
                 {...form.register("price")}
                 placeholder="99000"
               />
-              {errors.price && (
-                <p className="text-xs text-red-500">{errors.price.message}</p>
-              )}
+              {errors.price && <p className="text-xs text-red-500">{errors.price.message}</p>}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -352,9 +345,7 @@ export default function NewAdminContractPage() {
 
             {step === "form" && (
               <Button type="submit" disabled={createContract.isPending}>
-                {createContract.isPending
-                  ? "Đang tạo..."
-                  : "Tạo hợp đồng (Draft)"}
+                {createContract.isPending ? "Đang tạo..." : "Tạo hợp đồng (Draft)"}
               </Button>
             )}
           </form>
@@ -369,14 +360,13 @@ export default function NewAdminContractPage() {
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {step === "preview" && previewUrls.length === 0 && (
-              <Button
-                onClick={handleGeneratePreview}
-                disabled={generatePreview.isPending}
-              >
+            {step === "preview" && (
+              <Button onClick={handleGeneratePreview} disabled={generatePreview.isPending}>
                 {generatePreview.isPending
                   ? "Đang sinh ảnh preview..."
-                  : "Generate Preview"}
+                  : previewUrls.length > 0
+                    ? "Generate lại preview"
+                    : "Generate Preview"}
               </Button>
             )}
 
@@ -397,7 +387,8 @@ export default function NewAdminContractPage() {
                     className="relative aspect-[3/4] border border-slate-200 rounded-lg overflow-hidden"
                   >
                     <Image
-                      src={`${BACKEND_ORIGIN}${url}`}
+                      // Sinh lại preview ghi đè cùng URL → thêm ?v= để trình duyệt không dùng ảnh cũ.
+                      src={`${resolveBackendUrl(url)}?v=${generatePreview.submittedAt}`}
                       alt="Ảnh preview hợp đồng"
                       fill
                       sizes="(max-width: 640px) 33vw, 220px"
@@ -426,23 +417,16 @@ export default function NewAdminContractPage() {
             ) : (
               <>
                 <p className="text-sm text-slate-600">
-                  Xác nhận {previewUrls.length} ảnh preview phía trên đã đúng
-                  trước khi publish.
+                  Xác nhận {previewUrls.length} ảnh preview phía trên đã đúng trước khi publish.
                 </p>
 
-                <Button
-                  onClick={handlePublish}
-                  disabled={publishContract.isPending}
-                >
+                <Button onClick={handlePublish} disabled={publishContract.isPending}>
                   {publishContract.isPending ? "Đang publish..." : "Publish"}
                 </Button>
 
                 {publishContract.isError && (
                   <p className="text-sm text-red-500">
-                    {getErrorMessage(
-                      publishContract.error,
-                      "Không thể publish hợp đồng",
-                    )}
+                    {getErrorMessage(publishContract.error, "Không thể publish hợp đồng")}
                   </p>
                 )}
               </>

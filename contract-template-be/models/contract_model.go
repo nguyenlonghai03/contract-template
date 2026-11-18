@@ -1,6 +1,8 @@
 package models
 
 import (
+	"encoding/json"
+
 	"github.com/lib/pq"
 	"time"
 )
@@ -30,6 +32,10 @@ type Contract struct {
 	PdfObjectKey      string         `json:"pdf_object_key" gorm:"column:pdf_object_key"`
 	DocxObjectKey     string         `json:"docx_object_key" gorm:"column:docx_object_key"`
 	PreviewObjectKeys pq.StringArray `json:"preview_object_keys" gorm:"column:preview_object_keys;type:text[]"`
+
+	// Nội dung SEO (giới thiệu / thông tin / hướng dẫn), JSON khớp type
+	// ContractContents ở FE. NULL = không có, FE tự ẩn.
+	Contents json.RawMessage `json:"contents,omitempty" gorm:"column:contents;type:jsonb"`
 }
 
 const (
@@ -55,6 +61,8 @@ type PublicContract struct {
 	Downloads      string    `json:"downloads"`
 	OriginalPrice  string    `json:"originalPrice"`
 	Rating         float64   `json:"rating"`
+	// Chỉ có ở API chi tiết (danh sách không select cột này).
+	Contents json.RawMessage `json:"contents,omitempty"`
 }
 
 // ToPublic chuyển Contract sang PublicContract với danh sách ảnh preview đã
@@ -79,6 +87,7 @@ func (c Contract) ToPublic(previewImages []string) PublicContract {
 		Downloads:      c.Downloads,
 		OriginalPrice:  c.OriginalPrice,
 		Rating:         c.Rating,
+		Contents:       c.Contents,
 	}
 }
 

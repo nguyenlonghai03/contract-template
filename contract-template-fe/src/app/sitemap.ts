@@ -1,41 +1,48 @@
 import type { MetadataRoute } from "next";
 import { getContracts } from "@/services/contractApi";
 
-// Lấy toàn bộ hợp đồng đã Published để liệt kê URL thật trong sitemap,
-// thay vì khai báo tay. limit lớn vì /api/contracts đã lọc status=published
-// phía backend (xem contract_controller.go GetContracts).
+// Backend giới hạn tối đa 200 bản ghi / trang (maxPageLimit).
+const PAGE_SIZE = 200;
+// Chặn vòng lặp vô hạn nếu backend trả totalPages sai.
+const MAX_PAGES = 50;
+
+// Liệt kê TOÀN BỘ hợp đồng đã Published (phân trang tới hết), lastModified
+// lấy theo updated_at thật của từng hợp đồng.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://hopdongphaply.vn";
 
   const staticUrls: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
-      lastModified: new Date(),
       changeFrequency: "daily",
       priority: 1,
     },
     {
       url: `${baseUrl}/tim-kiem`,
-      lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
     },
   ];
 
   try {
-    const response = await getContracts(1, 200);
+    const contractUrls: MetadataRoute.Sitemap = [];
 
-    // Lưu ý: Contract.updatedAt (camelCase) không khớp field thật của API
-    // (backend trả "updated_at", snake_case) nên không dùng được type-safe ở
-    // đây — dùng thời điểm build sitemap làm lastModified thay vì sai lệch.
-    const contractUrls: MetadataRoute.Sitemap = response.data.map(
-      (contract) => ({
-        url: `${baseUrl}/hop-dong/${contract.slug}-${contract.id}`,
-        lastModified: new Date(),
-        changeFrequency: "weekly",
-        priority: 0.8,
-      }),
-    );
+    for (let page = 1; page <= MAX_PAGES; page++) {
+      const response = await getContracts(page, PAGE_SIZE);
+
+      for (const contract of response.data) {
+        const updatedAt = new Date(contract.updated_at);
+
+        contractUrls.push({
+          url: `${baseUrl}/hop-dong/${contract.slug}-${contract.id}`,
+          ...(Number.isNaN(updatedAt.getTime()) ? {} : { lastModified: updatedAt }),
+          changeFrequency: "weekly",
+          priority: 0.8,
+        });
+      }
+
+      if (page >= response.totalPages || response.data.length === 0) break;
+    }
 
     return [...staticUrls, ...contractUrls];
   } catch (error) {

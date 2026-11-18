@@ -4,10 +4,10 @@ import (
 	"net/http"
 	// Import package models của bạn vào đây (thay đường dẫn module cho khớp với go.mod của bạn)
 	models "github.com/nguyenlonghai03/contract-template/contract-template-be/models"
-	"github.com/nguyenlonghai03/contract-template/contract-template-be/services"
 
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -45,7 +45,7 @@ var contractListColumns = []string{
 // Cột cho trang chi tiết: thêm description + thông tin ảnh preview.
 var contractDetailColumns = append(
 	append([]string{}, contractListColumns...),
-	"description", "preview_images", "preview_object_keys",
+	"description", "preview_images", "preview_object_keys", "contents",
 )
 
 // parsePagination đọc page/limit từ query, luôn trả giá trị hợp lệ.
@@ -170,26 +170,39 @@ func GetAllContractTypes(db *gorm.DB) gin.HandlerFunc {
 // Hợp đồng tạo qua Admin (có object_key trên R2) sẽ được redirect sang một
 // presigned URL ngắn hạn để khách tải TRỰC TIẾP từ R2, không proxy qua server
 // này. Hợp đồng cũ (chỉ có file trên local disk) vẫn dùng luồng stream cũ.
+//
+// Yêu cầu order_code + access_token: mã đơn nằm trong nội dung chuyển khoản
+// (lộ trên sao kê) nên một mình nó không đủ để tải file.
 func DownloadContractHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		orderCode := c.Query("order_code")
+		accessToken := c.Query("access_token")
 		fileType := c.DefaultQuery("type", "pdf") // Mặc định là pdf nếu không truyền type
 
-		if orderCode == "" {
+		if orderCode == "" || accessToken == "" {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
-				"message": "Thiếu mã đơn hàng (order_code)",
+				"message": "Thiếu mã đơn hàng hoặc mã truy cập",
 			})
+			return
+		}
+
+		forbidden := func() {
+			c.JSON(http.StatusForbidden, gin.H{
+				"success": false,
+				"message": "Đơn hàng chưa được thanh toán hoặc không tồn tại",
+			})
+		}
+
+		if !validOrderAccessToken(orderCode, accessToken) {
+			forbidden()
 			return
 		}
 
 		// 1. Kiểm tra đơn hàng trong Database
 		var order models.Order
-		if err := db.Where("id = ? AND status = ?", orderCode, "Success").First(&order).Error; err != nil {
-			c.JSON(http.StatusForbidden, gin.H{
-				"success": false,
-				"message": "Đơn hàng chưa được thanh toán hoặc không tồn tại",
-			})
+		if err := db.Where("id = ? AND status = ?", orderCode, models.OrderStatusSuccess).First(&order).Error; err != nil {
+			forbidden()
 			return
 		}
 
@@ -225,22 +238,21 @@ func DownloadContractHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFunc {
 			}
 		}
 
+		disposition := attachmentDisposition(contract.Title, contract.Slug, extension)
+
 		// 3b. Hợp đồng tạo qua Admin — file gốc chỉ nằm trên R2, redirect sang
 		// presigned URL để tải trực tiếp từ R2, không đi qua server này.
 		if objectKey != "" {
-			downloadName := fmt.Sprintf("Hop-dong-%s%s", contract.Title, extension)
-			disposition := fmt.Sprintf(`attachment; filename="%s"`, downloadName)
-
 			presignedURL, err := storage.PresignGetURL(
 				c.Request.Context(), r2Client, r2Bucket(), objectKey,
 				downloadPresignExpiry, disposition,
 			)
 
 			if err != nil {
+				log.Printf("download: presign %s: %v", objectKey, err)
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"success": false,
 					"message": "Không thể tạo link tải file",
-					"error":   err.Error(),
 				})
 				return
 			}
@@ -250,9 +262,17 @@ func DownloadContractHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFunc {
 		}
 
 		// 4. Hợp đồng cũ — file gốc nằm trên local disk (giữ nguyên logic cũ)
-		filePath := filepath.Join("./storage/contract", fileName)
+		filePath := filepath.Join("./storage/contract", filepath.Base(fileName))
 
 		// Kiểm tra file vật lý có thực sự tồn tại không
+		if fileName == "" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"success": false,
+				"message": "File tài liệu không tồn tại trên hệ thống",
+			})
+			return
+		}
+
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			c.JSON(http.StatusNotFound, gin.H{
 				"success": false,
@@ -263,7 +283,7 @@ func DownloadContractHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFunc {
 
 		// 5. Cấu hình Header linh hoạt cho từng loại file (Rất quan trọng cho PDF)
 		c.Header("Content-Description", "File Transfer")
-		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", fileName))
+		c.Header("Content-Disposition", disposition)
 		c.Header("Content-Type", contentType)
 
 		// 6. Stream dữ liệu nhị phân của file trực tiếp về cho client
@@ -271,59 +291,55 @@ func DownloadContractHandler(db *gorm.DB, r2Client *s3.Client) gin.HandlerFunc {
 	}
 }
 
-// Nhận vào db *gorm.DB để thao tác với cơ sở dữ liệu
-func GeneratePreviewHandler(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Nhận tham số file PDF và ID hoặc Slug của hợp đồng cần gán
-		// Ví dụ: /api/contract/generate-preview?file=thue-nha.pdf&id=1 // Id này là id của hợp đồng
-		fileName := c.Query("file")
-		contractID := c.Query("id")
+// attachmentDisposition tạo header Content-Disposition an toàn: filename ASCII
+// (từ slug) cho trình duyệt cũ + filename* (RFC 5987, UTF-8) giữ tiếng Việt
+// có dấu. Tiêu đề chứa dấu " hay ký tự lạ không thể làm hỏng header.
+func attachmentDisposition(title, slug, extension string) string {
+	asciiName := "Hop-dong-" + asciiSlug(slug) + extension
+	utf8Name := "Hợp đồng " + strings.TrimSpace(title) + extension
 
-		if fileName == "" || contractID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Thiếu tên file hoặc ID hợp đồng"})
-			return
+	return fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`,
+		asciiName, rfc5987Encode(utf8Name))
+}
+
+func asciiSlug(s string) string {
+	var b strings.Builder
+
+	for _, r := range strings.ToLower(s) {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case r == '-' || r == '_' || r == ' ':
+			b.WriteByte('-')
 		}
-
-		// 1. Kiểm tra xem hợp đồng có tồn tại trong Database trước hay không
-		var contract models.Contract
-		if err := db.First(&contract, contractID).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hợp đồng trong Database"})
-			return
-		}
-
-		pdfPath := filepath.Join("./storage/contract", fileName)
-		// 2. Phân tách thư mục theo contractID để tránh bị gôm chung
-		// Local folder: ./storage/previews/1/ (hoặc theo UUID của hợp đồng)
-		outputFolder := filepath.Join("./storage/previews", contractID)
-
-		// URL prefix tương ứng để client có thể gọi xem ảnh
-		urlPrefix := fmt.Sprintf("/storage/previews/%s", contractID)
-
-		// 1. Gọi Service cắt PDF và tạo watermark
-		previewImages, err := services.GenerateContractPreviews(pdfPath, outputFolder, urlPrefix)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		// Gán mảng đường dẫn ảnh vào trường PreviewImages của Model
-		contract.PreviewImages = previewImages
-
-		// Lưu thay đổi xuống PostgreSQL
-		if err := db.Save(&contract).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lưu vào Database: " + err.Error()})
-			return
-		}
-
-		InvalidateContractCaches(contract.ID)
-
-		// 3. Trả về kết quả thành công
-		c.JSON(http.StatusOK, gin.H{
-			"message":        "Đã tạo preview và cập nhật DB thành công!",
-			"contract_id":    contract.ID,
-			"preview_images": previewImages,
-		})
 	}
+
+	if b.Len() == 0 {
+		return "tai-lieu"
+	}
+
+	return b.String()
+}
+
+// rfc5987Encode percent-encode mọi byte ngoài tập attr-char của RFC 5987.
+func rfc5987Encode(s string) string {
+	const attrChars = "!#$&+-.^_`|~"
+
+	var b strings.Builder
+
+	for i := 0; i < len(s); i++ {
+		ch := s[i]
+
+		if (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+			(ch >= '0' && ch <= '9') || strings.IndexByte(attrChars, ch) >= 0 {
+			b.WriteByte(ch)
+			continue
+		}
+
+		fmt.Fprintf(&b, "%%%02X", ch)
+	}
+
+	return b.String()
 }
 
 // GetContractByID xử lý lấy thông tin chi tiết hợp đồng theo ID

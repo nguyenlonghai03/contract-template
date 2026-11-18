@@ -7,10 +7,7 @@ export const reviewSchema = z.object({
     .string()
     .trim()
     .min(1, "Vui lòng điền số điện thoại!")
-    .regex(
-      /^0[35789][0-9]{8}$/,
-      "Số điện thoại không hợp lệ (ví dụ: 0981234567)!",
-    ),
+    .regex(/^0[35789][0-9]{8}$/, "Số điện thoại không hợp lệ (ví dụ: 0981234567)!"),
 
   comment: z.string().trim().min(1, "Vui lòng điền nội dung đánh giá!"),
 
