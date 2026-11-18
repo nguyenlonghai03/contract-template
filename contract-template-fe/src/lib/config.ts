@@ -1,5 +1,8 @@
 // Cấu hình dùng chung cho cả Server và Client Component.
 // NEXT_PUBLIC_* được inline lúc build nên dùng được ở cả hai phía.
+// Trên Cloudflare, đặt NEXT_PUBLIC_API_BASE_URL ở mục *Build* variables (kết
+// thúc bằng /api, vd https://contract-template-api.onrender.com/api); đổi giá
+// trị thì phải build lại FE mới có hiệu lực.
 
 export const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api"
