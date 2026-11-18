@@ -41,7 +41,10 @@ export default function Header() {
               Trang chủ
             </NavLink>
 
-            <NavLink href="/ve-chung-toi">Về chúng tôi</NavLink>
+            {/* Chính sách & Miễn trừ trách nhiệm cùng nhóm trang "Về chúng tôi" */}
+            <NavLink href="/ve-chung-toi" activePaths={["/chinh-sach", "/mien-tru-trach-nhiem"]}>
+              Về chúng tôi
+            </NavLink>
           </nav>
         </div>
 

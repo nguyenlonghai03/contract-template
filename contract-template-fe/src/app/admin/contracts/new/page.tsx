@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
-import Image from "next/image";
-import { FileCheck2, Upload } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, Circle, FileCheck2, Loader2, Upload, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { resolveBackendUrl } from "@/lib/config";
 import { slugify } from "@/lib/stringUtils";
 import { adminContractSchema, AdminContractFormValues } from "@/types/adminContractSchema";
 import {
@@ -31,7 +30,20 @@ import {
   usePublishContract,
 } from "@/hooks/useAdminContract";
 
-type Step = "form" | "preview" | "published";
+type Step = "create" | "preview" | "publish";
+type StepStatus = "pending" | "running" | "done" | "failed";
+
+const STEPS: { key: Step; label: string }[] = [
+  { key: "create", label: "Tải file gốc lên & tạo hợp đồng" },
+  { key: "preview", label: "Sinh ảnh preview" },
+  { key: "publish", label: "Publish lên website" },
+];
+
+const STEP_ERROR_FALLBACK: Record<Step, string> = {
+  create: "Không thể tạo hợp đồng",
+  preview: "Không thể sinh ảnh preview",
+  publish: "Không thể publish hợp đồng",
+};
 
 // contractId nằm trên URL (?id=...) để tải lại trang / mở lại tab vẫn làm
 // tiếp được bản Draft đang dở, thay vì để lại Draft mồ côi chiếm slug.
@@ -146,15 +158,23 @@ function NewAdminContractWizard() {
   const generatePreview = useGeneratePreview();
   const publishContract = usePublishContract();
 
-  // Ảnh preview mới sinh trong phiên này, nếu không thì lấy từ Draft đã lưu.
-  const previewUrls = generatePreview.data?.preview_urls ?? savedContract.data?.preview_urls ?? [];
+  // Bước đang chạy / bước bị lỗi của quy trình 1 nút (create → preview → publish).
+  const [runningStep, setRunningStep] = useState<Step | null>(null);
+  const [failedStep, setFailedStep] = useState<Step | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  // Đổi key để remount form (xoá file đã chọn trong <input type="file">) khi tạo hợp đồng khác.
+  const [formKey, setFormKey] = useState(0);
 
-  const isPublished = publishContract.isSuccess || savedContract.data?.data.status === "published";
+  const savedData = savedContract.data?.data;
+  const isPublished = publishContract.isSuccess || savedData?.status === "published";
+  const isRunning = runningStep !== null;
+  // Đã tạo Draft (có id) hoặc đang chạy thì khoá form, tránh tạo trùng.
+  const formLocked = Boolean(contractId) || isRunning;
 
-  const step: Step = !contractId ? "form" : isPublished ? "published" : "preview";
+  // Đã có Draft (?id=) nhưng chưa publish: lần trước bị lỗi giữa chừng hoặc tải lại trang.
+  const hasUnfinishedDraft = Boolean(contractId) && !isPublished && !isRunning;
 
   // Mở lại Draft đang dở: điền lại thông tin đã lưu vào form (chỉ để xem).
-  const savedData = savedContract.data?.data;
   useEffect(() => {
     if (!savedData) return;
 
@@ -211,34 +231,90 @@ function NewAdminContractWizard() {
     formData.append("pdf_file", pdfFile);
     formData.append("docx_file", docxFile);
 
-    createContract.mutate(formData, {
-      onSuccess: (res) => {
-        // Đưa id lên URL: tải lại trang vẫn tiếp tục được bước 2/3.
-        router.replace(`?id=${res.data.id}`);
-      },
-    });
+    runPipeline("create", formData);
   };
 
-  const handleGeneratePreview = () => {
+  // Chạy tuần tự create → generate preview → publish. Lỗi ở bước nào thì dừng ở bước đó,
+  // admin bấm "Thử lại" để chạy tiếp từ đúng bước bị lỗi (Draft đã tạo vẫn giữ id trên URL).
+  const runPipeline = async (start: Step, formData?: FormData) => {
+    let current: Step = start;
+    let id = contractId;
+
+    setFailedStep(null);
+    setErrorMessage("");
+
+    try {
+      if (start === "create") {
+        setRunningStep("create");
+        const res = await createContract.mutateAsync(formData as FormData);
+        id = res.data.id;
+        // Đưa id lên URL: tải lại trang / lỗi giữa chừng vẫn làm tiếp được Draft này.
+        router.replace(`?id=${id}`);
+      }
+
+      if (!id) return;
+
+      if (start !== "publish") {
+        current = "preview";
+        setRunningStep("preview");
+        await generatePreview.mutateAsync(id);
+      }
+
+      current = "publish";
+      setRunningStep("publish");
+      await publishContract.mutateAsync(id);
+    } catch (error) {
+      setFailedStep(current);
+      setErrorMessage(getErrorMessage(error, STEP_ERROR_FALLBACK[current]));
+    } finally {
+      setRunningStep(null);
+    }
+  };
+
+  const handleRetry = () => {
     if (!contractId) return;
-
-    generatePreview.mutate(contractId);
+    // Lỗi ở publish thì publish lại; còn lại (lỗi preview / tải lại trang) sinh lại preview rồi publish.
+    runPipeline(failedStep === "publish" ? "publish" : "preview");
   };
 
-  const handlePublish = () => {
-    if (!contractId) return;
-
-    publishContract.mutate(contractId);
+  const handleCreateAnother = () => {
+    router.replace("/admin/contracts/new");
+    form.reset();
+    setPdfFile(null);
+    setDocxFile(null);
+    setFileError("");
+    setFailedStep(null);
+    setErrorMessage("");
+    createContract.reset();
+    generatePreview.reset();
+    publishContract.reset();
+    setFormKey((key) => key + 1);
   };
+
+  const getStepStatus = (step: Step): StepStatus => {
+    if (isPublished) return "done";
+
+    const index = STEPS.findIndex((s) => s.key === step);
+    const activeStep = runningStep ?? failedStep ?? (contractId ? "preview" : null);
+    if (!activeStep) return "pending";
+
+    const activeIndex = STEPS.findIndex((s) => s.key === activeStep);
+    if (index < activeIndex) return "done";
+    if (index > activeIndex) return "pending";
+    if (runningStep) return "running";
+    if (failedStep) return "failed";
+    return "pending";
+  };
+
+  const showProgress = isRunning || Boolean(contractId) || failedStep !== null;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
       <h1 className="text-xl font-semibold text-slate-900">Tạo hợp đồng mẫu mới</h1>
 
-      {/* BƯỚC 1: THÔNG TIN + UPLOAD FILE GỐC */}
-      <Card className={step !== "form" ? "opacity-60" : ""}>
+      <Card key={formKey} className={formLocked ? "opacity-60" : ""}>
         <CardHeader>
-          <CardTitle>Bước 1: Thông tin & file gốc</CardTitle>
+          <CardTitle>Thông tin & file gốc</CardTitle>
         </CardHeader>
 
         <CardContent>
@@ -246,7 +322,7 @@ function NewAdminContractWizard() {
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Tên hợp đồng</label>
               <Input
-                disabled={step !== "form"}
+                disabled={formLocked}
                 value={form.watch("title")}
                 onChange={(e) => handleTitleChange(e.target.value)}
                 placeholder="Ví dụ: Hợp đồng thuê nhà"
@@ -258,7 +334,7 @@ function NewAdminContractWizard() {
               <label className="text-sm font-medium text-slate-700">Loại hợp đồng</label>
               <Select
                 items={contractTypeItems}
-                disabled={step !== "form"}
+                disabled={formLocked}
                 value={form.watch("contract_type_id")}
                 onValueChange={(value) => form.setValue("contract_type_id", value as string)}
               >
@@ -286,7 +362,7 @@ function NewAdminContractWizard() {
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Slug</label>
               <Input
-                disabled={step !== "form"}
+                disabled={formLocked}
                 {...form.register("slug")}
                 placeholder="hop-dong-thue-nha"
               />
@@ -296,7 +372,7 @@ function NewAdminContractWizard() {
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Mô tả</label>
               <Textarea
-                disabled={step !== "form"}
+                disabled={formLocked}
                 rows={4}
                 {...form.register("description")}
                 placeholder="Mô tả ngắn về hợp đồng"
@@ -309,7 +385,7 @@ function NewAdminContractWizard() {
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Giá bán (VNĐ)</label>
               <Input
-                disabled={step !== "form"}
+                disabled={formLocked}
                 type="number"
                 {...form.register("price")}
                 placeholder="99000"
@@ -322,7 +398,7 @@ function NewAdminContractWizard() {
                 label="File PDF gốc"
                 accept=".pdf"
                 file={pdfFile}
-                disabled={step !== "form"}
+                disabled={formLocked}
                 onChange={setPdfFile}
               />
 
@@ -330,106 +406,88 @@ function NewAdminContractWizard() {
                 label="File DOCX gốc"
                 accept=".docx"
                 file={docxFile}
-                disabled={step !== "form"}
+                disabled={formLocked}
                 onChange={setDocxFile}
               />
             </div>
 
             {fileError && <p className="text-sm text-red-500">{fileError}</p>}
 
-            {createContract.isError && (
-              <p className="text-sm text-red-500">
-                {getErrorMessage(createContract.error, "Không thể tạo hợp đồng")}
-              </p>
-            )}
-
-            {step === "form" && (
-              <Button type="submit" disabled={createContract.isPending}>
-                {createContract.isPending ? "Đang tạo..." : "Tạo hợp đồng (Draft)"}
-              </Button>
+            {!formLocked && (
+              <Button type="submit">{failedStep === "create" ? "Thử lại" : "Tạo hợp đồng"}</Button>
             )}
           </form>
         </CardContent>
       </Card>
 
-      {/* BƯỚC 2: SINH ẢNH PREVIEW */}
-      {contractId && (
-        <Card className={step === "published" ? "opacity-60" : ""}>
+      {showProgress && (
+        <Card>
           <CardHeader>
-            <CardTitle>Bước 2: Sinh ảnh preview</CardTitle>
+            <CardTitle>Tiến trình</CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {step === "preview" && (
-              <Button onClick={handleGeneratePreview} disabled={generatePreview.isPending}>
-                {generatePreview.isPending
-                  ? "Đang sinh ảnh preview..."
-                  : previewUrls.length > 0
-                    ? "Generate lại preview"
-                    : "Generate Preview"}
-              </Button>
-            )}
+            <ul className="space-y-2">
+              {STEPS.map(({ key, label }) => {
+                const status = getStepStatus(key);
+                return (
+                  <li key={key} className="flex items-center gap-2 text-sm">
+                    {status === "done" && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                    {status === "running" && (
+                      <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />
+                    )}
+                    {status === "failed" && <XCircle className="w-4 h-4 text-red-500" />}
+                    {status === "pending" && <Circle className="w-4 h-4 text-slate-300" />}
+                    <span
+                      className={
+                        status === "pending"
+                          ? "text-slate-400"
+                          : status === "failed"
+                            ? "text-red-600"
+                            : "text-slate-700"
+                      }
+                    >
+                      {label}
+                      {status === "running" && "..."}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
 
-            {generatePreview.isError && (
-              <p className="text-sm text-red-500">
-                {getErrorMessage(
-                  generatePreview.error,
-                  "Không thể sinh ảnh preview, vui lòng thử lại",
-                )}
-              </p>
-            )}
+            {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
 
-            {previewUrls.length > 0 && (
-              <div className="grid grid-cols-3 gap-3">
-                {previewUrls.map((url) => (
-                  <div
-                    key={url}
-                    className="relative aspect-[3/4] border border-slate-200 rounded-lg overflow-hidden"
-                  >
-                    <Image
-                      // Sinh lại preview ghi đè cùng URL → thêm ?v= để trình duyệt không dùng ảnh cũ.
-                      src={`${resolveBackendUrl(url)}?v=${generatePreview.submittedAt}`}
-                      alt="Ảnh preview hợp đồng"
-                      fill
-                      sizes="(max-width: 640px) 33vw, 220px"
-                      className="object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* BƯỚC 3: PUBLISH */}
-      {contractId && previewUrls.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Bước 3: Publish</CardTitle>
-          </CardHeader>
-
-          <CardContent className="space-y-3">
-            {step === "published" ? (
-              <p className="text-sm text-emerald-600 font-medium">
-                Hợp đồng đã được publish thành công!
-              </p>
-            ) : (
-              <>
-                <p className="text-sm text-slate-600">
-                  Xác nhận {previewUrls.length} ảnh preview phía trên đã đúng trước khi publish.
-                </p>
-
-                <Button onClick={handlePublish} disabled={publishContract.isPending}>
-                  {publishContract.isPending ? "Đang publish..." : "Publish"}
-                </Button>
-
-                {publishContract.isError && (
-                  <p className="text-sm text-red-500">
-                    {getErrorMessage(publishContract.error, "Không thể publish hợp đồng")}
+            {hasUnfinishedDraft && failedStep !== "create" && (
+              <div className="space-y-2">
+                {!failedStep && (
+                  <p className="text-sm text-slate-600">
+                    Hợp đồng này đang ở trạng thái Draft, chưa được publish.
                   </p>
                 )}
-              </>
+                <Button onClick={handleRetry}>
+                  {failedStep ? "Thử lại" : "Tiếp tục sinh preview & publish"}
+                </Button>
+              </div>
+            )}
+
+            {isPublished && (
+              <div className="space-y-3">
+                <p className="text-sm text-emerald-600 font-medium">
+                  Hợp đồng đã được publish lên website thành công!
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {savedData?.slug && (
+                    <Link
+                      href={`/hop-dong/${savedData.slug}-${contractId}`}
+                      target="_blank"
+                      className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-sm font-medium hover:bg-muted"
+                    >
+                      Xem trên website
+                    </Link>
+                  )}
+                  <Button onClick={handleCreateAnother}>Tạo hợp đồng khác</Button>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -11,7 +11,7 @@ type Review struct {
 	Phone      string `json:"phone" binding:"required"`              // Số điện thoại
 	Rating     int    `json:"rating" binding:"required,min=1,max=5"` // Số sao (1-5)
 	Comment    string `json:"comment" binding:"required"`            // Nội dung đánh giá
-	IsApproved bool   `json:"is_approved" gorm:"default:false"`      // Mặc định chờ kiểm duyệt
+	IsApproved bool   `json:"is_approved" gorm:"default:false"`      // true khi qua kiểm duyệt tự động (services.ModerateReview); admin có thể ẩn bằng cách đặt false
 }
 
 // Masking số điện thoại trước khi trả về cho Frontend (giống giao diện mẫu của bạn)

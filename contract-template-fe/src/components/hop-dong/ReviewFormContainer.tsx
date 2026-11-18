@@ -10,6 +10,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { createReview } from "@/services/reviewService";
+import { refreshContractReviews } from "@/services/reviewActions";
 import { ReviewFormValues, reviewSchema } from "@/types/reviewSchema";
 
 import ReviewForm from "./ReviewForm";
@@ -48,8 +49,8 @@ export default function ReviewFormContainer({ contractId }: ReviewFormContainerP
   const mutation = useMutation({
     mutationFn: createReview,
 
-    onSuccess: () => {
-      setSuccessMessage("Gửi đánh giá thành công! Đang chờ quản trị viên kiểm duyệt.");
+    onSuccess: async () => {
+      setSuccessMessage("Gửi đánh giá thành công! Cảm ơn bạn đã đánh giá.");
 
       setErrorMessage("");
 
@@ -58,7 +59,12 @@ export default function ReviewFormContainer({ contractId }: ReviewFormContainerP
       setRating(5);
       setHoverRating(0);
 
-      // Fetch lại dữ liệu từ Server Component
+      // Review được duyệt tự động: xoá cache danh sách review rồi fetch lại Server Component.
+      try {
+        await refreshContractReviews(numericContractId);
+      } catch (error) {
+        console.error("Failed to refresh reviews cache:", error);
+      }
       router.refresh();
     },
 
